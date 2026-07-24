@@ -20,7 +20,7 @@ target_include_directories(geometry2 PUBLIC include)
 # Add tests
 # Link only the targets provided by FindGTest. GMock target may not be available
 # depending on the system package. Remove GMock link unless tests use gmock.
-option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_TESTS "Build tests" ON)
 if(BUILD_TESTS)
 	enable_testing()
 	find_package(GTest REQUIRED)
