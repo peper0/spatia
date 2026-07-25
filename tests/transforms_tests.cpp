@@ -25,18 +25,15 @@ struct D {
     bool operator==(const D& rhs) const = default;
 };
 
-template<class DST, class SRC>
+template <class DST, class SRC>
 class Transform {
-public:
+   public:
     int delta;
 
     DST operator()(const SRC& p, Tag<DST> = {}) const {
         return DST{p.x + delta};
     }
 };
-
-
-
 
 TEST(ComposeTest, SingleTransform) {
     Transform<B, A> t_b_from_a{10};
@@ -45,8 +42,7 @@ TEST(ComposeTest, SingleTransform) {
     A p_a{1};
     B p_b{10 + 1};
     EXPECT_EQ(t_b_from_a(p_a), p_b);
-    EXPECT_TRUE(true); // dummy assertion to avoid "no tests" warning
-
+    EXPECT_TRUE(true);  // dummy assertion to avoid "no tests" warning
 }
 
 TEST(ComposeTest, HandlesSingleAndIdentity) {
@@ -57,7 +53,6 @@ TEST(ComposeTest, HandlesSingleAndIdentity) {
     EXPECT_EQ(t_multi.to<B>(p_a), p_b);
     EXPECT_EQ(t_multi.to<A>(p_a), p_a);
     EXPECT_EQ(t_multi.to<B>(p_b), p_b);
-
 }
 
 TEST(ComposeTest, HandlesComposingThereAndBack) {
@@ -118,55 +113,56 @@ struct ThreeTransformChainFixture {
         EXPECT_EQ(p_d, t_multi.template to<D>(p_c));
     }
 };
-} // namespace
+}  // namespace
 
 TEST(ComposeTest, HandlesAllTransformsWhenComposingThree) {
     ThreeTransformChainFixture fixture;
 
-    auto t_multi =
-        compose_transforms(fixture.t_d_from_c, fixture.t_c_from_b, fixture.t_b_from_a);
+    auto t_multi = compose_transforms(fixture.t_d_from_c, fixture.t_c_from_b,
+                                      fixture.t_b_from_a);
     fixture.expect_all_paths(t_multi);
 }
 
 TEST(ComposeTest, HandlesAllTransformsWhenComposingThreeInReverseOrder) {
     ThreeTransformChainFixture fixture;
 
-    auto t_multi =
-        compose_transforms(fixture.t_b_from_a, fixture.t_c_from_b, fixture.t_d_from_c);
+    auto t_multi = compose_transforms(fixture.t_b_from_a, fixture.t_c_from_b,
+                                      fixture.t_d_from_c);
     fixture.expect_all_paths(t_multi);
 }
 
 TEST(ComposeTest, HandlesAllTransformsWhenComposingThreeInDifferentOrder) {
     ThreeTransformChainFixture fixture;
-    auto t_multi =
-        compose_transforms(fixture.t_b_from_a, fixture.t_d_from_c, fixture.t_c_from_b);
+    auto t_multi = compose_transforms(fixture.t_b_from_a, fixture.t_d_from_c,
+                                      fixture.t_c_from_b);
     fixture.expect_all_paths(t_multi);
 }
 
 TEST(ComposeTest, HandlesAllTransformsWhenComposingThreeInDifferentOrder2) {
     ThreeTransformChainFixture fixture;
 
-    // any order but must introduce one new cs at a time (cannot connect two already existing ones)
-    auto t_multi =
-        compose_transforms(fixture.t_d_from_c, fixture.t_b_from_a, fixture.t_c_from_b);
+    // any order but must introduce one new cs at a time (cannot connect two
+    // already existing ones)
+    auto t_multi = compose_transforms(fixture.t_d_from_c, fixture.t_b_from_a,
+                                      fixture.t_c_from_b);
     fixture.expect_all_paths(t_multi);
 }
 
-TEST(ComposeTest, HandlesAllTransformsWhenComposingThreeWithInverses)
-{
-    Transform<B, A> t_b_from_a{10}; // B <- A
-    Transform<C, B> t_c_from_b{100}; // C <- B
-    Transform<D, C> t_d_from_c{1000}; // D <- C
-    Transform<A, B> t_a_from_b{-10}; // A <- B
-    Transform<B, C> t_b_from_c{-100}; // B <- C
-    Transform<C, D> t_c_from_d{-1000}; // C <- D
+TEST(ComposeTest, HandlesAllTransformsWhenComposingThreeWithInverses) {
+    Transform<B, A> t_b_from_a{10};     // B <- A
+    Transform<C, B> t_c_from_b{100};    // C <- B
+    Transform<D, C> t_d_from_c{1000};   // D <- C
+    Transform<A, B> t_a_from_b{-10};    // A <- B
+    Transform<B, C> t_b_from_c{-100};   // B <- C
+    Transform<C, D> t_c_from_d{-1000};  // C <- D
 
     A p_a{1};
     B p_b{10 + 1};
     C p_c{100 + 10 + 1};
     D p_d{1000 + 100 + 10 + 1};
 
-    auto t_multi = compose_transforms(t_b_from_a, t_a_from_b, t_b_from_c, t_c_from_b, t_c_from_d, t_d_from_c);
+    auto t_multi = compose_transforms(t_b_from_a, t_a_from_b, t_b_from_c,
+                                      t_c_from_b, t_c_from_d, t_d_from_c);
 
     EXPECT_EQ(p_a, t_multi.to<A>(p_a));
     EXPECT_EQ(p_b, t_multi.to<B>(p_a));
@@ -186,10 +182,9 @@ TEST(ComposeTest, HandlesAllTransformsWhenComposingThreeWithInverses)
     EXPECT_EQ(p_d, t_multi.to<D>(p_d));
 }
 
-
-template<class DST, class SRC>
+template <class DST, class SRC>
 class BiTransform {
-public:
+   public:
     int delta;
     DST operator()(const SRC& p, Tag<DST> = {}) const {
         return DST{p.x + delta};
@@ -198,14 +193,11 @@ public:
         return SRC{p.x - delta};
     }
 
-    using transformations = transform_list<
-    transform_spec<SRC, DST>,
-    transform_spec<DST, SRC>
->;
+    using transformations =
+        transform_list<transform_spec<SRC, DST>, transform_spec<DST, SRC> >;
 };
 
-TEST(ComposeTest, HandlesBidirectionalTransforms)
-{
+TEST(ComposeTest, HandlesBidirectionalTransforms) {
     Transform<B, A> t_b_from_a{10};
     Transform<A, B> t_a_from_b{-10};
     BiTransform<C, B> t_b_c{100};
@@ -227,15 +219,11 @@ TEST(ComposeTest, HandlesBidirectionalTransforms)
 }
 
 // A non-overloaded ordinary function is inferred automatically.
-B free_b_from_a(const A& p) {
-    return B{p.x + 10};
-}
+B free_b_from_a(const A& p) { return B{p.x + 10}; }
 
 TEST(ComposeTest, SupportsOrdinaryFunctionAndCapturingLambda) {
     const int delta = 100;
-    auto c_from_b = [delta](const B& p) {
-        return C{p.x + delta};
-    };
+    auto c_from_b = [delta](const B& p) { return C{p.x + delta}; };
 
     // A function name and a lambda can be composed directly.
     auto t_multi = compose_transforms(free_b_from_a, c_from_b);
@@ -246,19 +234,14 @@ TEST(ComposeTest, SupportsOrdinaryFunctionAndCapturingLambda) {
 
 // An overloaded function object declares the graph edges it exposes.
 class OverloadedFunctor {
-public:
-    using transformations = transform_list<
-        transform_spec<A, C>, // C -> A
-        transform_spec<B, C>  // C -> B
-    >;
+   public:
+    using transformations = transform_list<transform_spec<A, C>,  // C -> A
+                                           transform_spec<B, C>   // C -> B
+                                           >;
 
-    A operator()(const C& p, Tag<A>) const {
-        return A{p.x + 1000};
-    }
+    A operator()(const C& p, Tag<A>) const { return A{p.x + 1000}; }
 
-    B operator()(const C& p, Tag<B>) const {
-        return B{p.x + 100};
-    }
+    B operator()(const C& p, Tag<B>) const { return B{p.x + 100}; }
 };
 
 TEST(ComposeTest, SupportsOverloadedFunctionObject) {
@@ -272,17 +255,11 @@ TEST(ComposeTest, SupportsOverloadedFunctionObject) {
 }
 
 // Several overloads of one ordinary function must be selected one by one.
-A overloaded_free(const C& p, Tag<A>) {
-    return A{p.x + 1000};
-}
+A overloaded_free(const C& p, Tag<A>) { return A{p.x + 1000}; }
 
-B overloaded_free(const C& p, Tag<B>) {
-    return B{p.x + 100};
-}
+B overloaded_free(const C& p, Tag<B>) { return B{p.x + 100}; }
 
-D overloaded_free(const B& p, Tag<D>) {
-    return D{p.x + 10'000};
-}
+D overloaded_free(const B& p, Tag<D>) { return D{p.x + 10'000}; }
 
 TEST(ComposeTest, SupportsAllSelectedOverloadsOfOrdinaryFunction) {
     Transform<C, D> c_from_d{10};
@@ -292,19 +269,16 @@ TEST(ComposeTest, SupportsAllSelectedOverloadsOfOrdinaryFunction) {
         // a distinct edge in the composed type graph.
         overload_cast<A(const C&, Tag<A>)>(overloaded_free),
         overload_cast<B(const C&, Tag<B>)>(overloaded_free),
-        overload_cast<D(const B&, Tag<D>)>(overloaded_free),
-        c_from_d);
+        overload_cast<D(const B&, Tag<D>)>(overloaded_free), c_from_d);
 
-    EXPECT_EQ(t_multi(D{1}, Tag<A>{}), A{1011});      // D -> C -> A
-    EXPECT_EQ(t_multi(D{1}, Tag<B>{}), B{111});       // D -> C -> B
-    EXPECT_EQ(t_multi(C{1}, Tag<D>{}), D{10'101});    // C -> B -> D
+    EXPECT_EQ(t_multi(D{1}, Tag<A>{}), A{1011});    // D -> C -> A
+    EXPECT_EQ(t_multi(D{1}, Tag<B>{}), B{111});     // D -> C -> B
+    EXPECT_EQ(t_multi(C{1}, Tag<D>{}), D{10'101});  // C -> B -> D
 }
 
 TEST(ComposeTest, SupportsGenericLambdaWithExplicitMetadata) {
     const int delta = 100;
-    auto generic = [delta](const auto& p) {
-        return C{p.x + delta};
-    };
+    auto generic = [delta](const auto& p) { return C{p.x + delta}; };
 
     auto c_from_b = make_transform<C, B>(generic);
     auto t_multi = compose_transforms(Transform<B, A>{10}, c_from_b);
