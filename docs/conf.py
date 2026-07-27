@@ -1,20 +1,10 @@
-import os
-
 project = "spatia"
 author = "spatia contributors"
 release = "0.1"
 
-extensions = ["myst_parser", "breathe"]
+extensions = ["myst_parser"]
 source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
 myst_enable_extensions = ["colon_fence", "deflist"]
-
-breathe_projects = {
-    "spatia": os.environ.get(
-        "SPATIA_DOXYGEN_XML", "_build/doxygen/xml"
-    )
-}
-breathe_default_project = "spatia"
-breathe_default_members = ("members", "undoc-members")
 
 primary_domain = "cpp"
 highlight_language = "cpp"

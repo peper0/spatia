@@ -11,9 +11,8 @@ namespace spatia {
 /// Two consecutive angles about the Z and Y axes of one system, used as a
 /// two-angle parameterization of a direction.
 template <class System>
+    requires(dimension_v<System> == 3)
 class EulerZY {
-    static_assert(dimension_v<System> == 3);
-
    public:
     using SystemType = System;
 
@@ -34,10 +33,14 @@ class EulerZY {
 
 /// Full rotation between two systems through the intrinsic Z-Y'-X'' sequence
 /// of Tait-Bryan angles.
+///
+/// The dimensions are a constraint rather than a `static_assert`, so that
+/// naming `EulerZYX` for a two-dimensional system merely removes an overload
+/// from consideration instead of failing the whole translation unit. Overload
+/// sets that mix this type with plane rotations depend on that.
 template <class From, class To>
+    requires(dimension_v<From> == 3 && dimension_v<To> == 3)
 class EulerZYX {
-    static_assert(dimension_v<From> == 3 && dimension_v<To> == 3);
-
    public:
     using FromSystem = From;
     using ToSystem = To;

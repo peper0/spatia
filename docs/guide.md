@@ -225,4 +225,4 @@ above does, or use `combine`.
 
 ## Complete project
 
-[`examples/guide`](../examples/guide) is a standalone CMake project containing the four systems from the specification, domain angle facades, direction conversions, rotations, composition, inversion, a quaternion, a rigid transform, 2D types, and commented compile-time failures.
+[`examples/guide`](https://github.com/peper0/spatia/tree/main/examples/guide) is a standalone CMake project containing the four systems from the specification, domain angle facades, direction conversions, rotations, composition, inversion, a quaternion, a rigid transform, 2D types, and commented compile-time failures.

@@ -213,8 +213,8 @@ TEST(ComposeTest, HandlesBidirectionalTransforms) {
 B free_b_from_a(const A& p) { return B{p.x + 10}; }
 
 TEST(ComposeTest, SupportsOrdinaryFunctionAndCapturingLambda) {
-    const int delta = 100;
-    auto c_from_b = [delta](const B& p) { return C{p.x + delta}; };
+    constexpr int delta = 100;
+    auto c_from_b = [](const B& p) { return C{p.x + delta}; };
 
     // A function name and a lambda can be composed directly.
     auto t_multi = combine(free_b_from_a, c_from_b);
