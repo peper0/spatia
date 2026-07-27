@@ -62,10 +62,10 @@ endif ()
 
 # Compile-time performance tests
 #
-# Optional and not part of the release: each benchmarks/compose_variants/
-# <variant>/compose.hpp is an alternative implementation of the transform
-# graph, built from the same sources to compare build times. The whole section
-# is skipped when those directories are absent.
+# Each benchmarks/compose_variants/<variant>/compose.hpp is an alternative
+# implementation of the transform graph. Every variant gets its own target per
+# scenario, all built from the same sources, so their build times can be
+# compared. The targets are excluded from the default build.
 #
 # Run all variants sequentially with:
 #
@@ -75,8 +75,6 @@ endif ()
 #
 #   cmake --build build/compile-time \
 #       --target spatia_compile_time_tests_variant_a_opt_large_graph
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/compose_variants" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/compile_time")
 file(
         GLOB SPATIA_COMPOSE_VARIANT_HEADERS
         "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/compose_variants/*/compose.hpp"
@@ -132,6 +130,9 @@ foreach (VARIANT_HEADER IN LISTS SPATIA_COMPOSE_VARIANT_HEADERS)
                 BEFORE PRIVATE
                 "${VARIANT_DIRECTORY}"
         )
+        # These targets do not link the library, so they need the standard
+        # spelled out on their own.
+        target_compile_features("${VARIANT_TARGET}" PRIVATE cxx_std_23)
         if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             target_compile_options("${VARIANT_TARGET}" PRIVATE -ftemplate-depth=8192)
         endif ()
@@ -150,7 +151,6 @@ foreach (VARIANT_HEADER IN LISTS SPATIA_COMPOSE_VARIANT_HEADERS)
         endif ()
     endforeach ()
 endforeach ()
-endif ()
 
 # Runtime benchmarks
 #

@@ -42,6 +42,33 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+      # Proves that an installed spatia can be consumed the documented way.
+      - name: Install and consume
+        run: |
+          cmake --install build --prefix "${RUNNER_TEMP}/spatia-install"
+          mkdir -p "${RUNNER_TEMP}/consumer"
+          cat > "${RUNNER_TEMP}/consumer/CMakeLists.txt" <<'CMAKE'
+          cmake_minimum_required(VERSION 3.14)
+          project(consumer CXX)
+          find_package(spatia REQUIRED)
+          add_executable(consumer main.cpp)
+          target_link_libraries(consumer PRIVATE spatia::spatia)
+          CMAKE
+          cat > "${RUNNER_TEMP}/consumer/main.cpp" <<'CPP'
+          #include <spatia/spatia.hpp>
+          struct A { static constexpr std::size_t dimension = 2; };
+          struct B { static constexpr std::size_t dimension = 2; };
+          int main() {
+              using namespace spatia;
+              const auto rotation = to_rotation<A, B>(Angle::from_degrees(90.0));
+              return rotation(Vector<A>{1.0, 0.0}).dy() > 0.99 ? 0 : 1;
+          }
+          CPP
+          cmake -S "${RUNNER_TEMP}/consumer" -B "${RUNNER_TEMP}/consumer/build" \
+            -DCMAKE_PREFIX_PATH="${RUNNER_TEMP}/spatia-install"
+          cmake --build "${RUNNER_TEMP}/consumer/build"
+          "${RUNNER_TEMP}/consumer/build/consumer"
+
   format:
     runs-on: ubuntu-latest
     steps:

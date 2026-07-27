@@ -30,7 +30,7 @@ cmake --build "${build_directory}" --target clean --parallel 1
 
 shopt -s nullglob
 variant_headers=(
-    "${repository_root}"/include/compose_variants/*/compose.hpp
+    "${repository_root}"/benchmarks/compose_variants/*/compose.hpp
 )
 scenarios=(large_graph many_uses four_trees_unrolled four_trees_generated)
 
@@ -53,7 +53,7 @@ for variant_header in "${variant_headers[@]}"; do
     result_variants+=("${variant_name}")
 
     for scenario in "${scenarios[@]}"; do
-        target="geometry2_compile_time_tests_${variant_name}_${scenario}"
+        target="spatia_compile_time_tests_${variant_name}_${scenario}"
         metrics_file="${build_directory}/compile_time_metrics/${variant_name}_${scenario}.csv"
         build_log="${build_directory}/compile_time_metrics/${variant_name}_${scenario}.log"
         result_key="${variant_name}:${scenario}"

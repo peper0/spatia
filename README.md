@@ -1,6 +1,6 @@
 # spatia
 
-Strongly typed geometry for C++23: a coordinate system is part of every geometric type, so invalid frame mixing is rejected while transformations compose naturally.
+Geometry for C++23 that keeps track of coordinate systems
 
 ```cpp
 struct Body  { static constexpr std::size_t dimension = 3; };
@@ -15,7 +15,27 @@ Vector<World> v_in_world = p_in_world - Point<World>{0, 0, 0};
 // p_in_world - Point<Body>{0, 0, 0}  // compile-time error: different systems
 ```
 
-AI: dodaj tu jeszcze przykład combine na dwóch transformacjach z przekształceniem później do każdego z układów
+Hand `combine` the transforms you happen to have, and you can then ask for any
+system you like — it works out the route, in either direction, at compile time:
+
+```cpp
+struct Camera { static constexpr std::size_t dimension = 3; };
+
+auto camera_to_body = to_rotation(EulerZYX<Camera, Body>{
+    Angle::from_degrees(90), Angle{}, Angle{}});
+
+auto transforms = combine(
+    BiRigid<Camera, Body>{camera_to_body,
+                          Translation<Camera, Body>{Vector<Body>{0.1, 0.0, -0.2}}},
+    BiRigid<Body, World>{body_to_world,
+                         Translation<Body, World>{Vector<World>{10.0, 20.0, 30.0}}});
+
+Point<Camera> target{0.0, 0.0, 5.0};
+
+Point<Body>   in_body  = transforms.to<Point<Body>>(target);
+Point<World>  in_world = transforms.to<Point<World>>(target);
+Point<Camera> back     = transforms.to<Point<Camera>>(in_world);
+```
 
 ## Start here
 

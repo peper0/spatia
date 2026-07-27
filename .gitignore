@@ -14,9 +14,3 @@ crap/
 TODO.md
 REVIEW.md
 .mcp.json
-
-# Optional compile-time benchmark variants: kept out of the release because
-# they are alternative implementations of the same graph, useful only when
-# comparing build times locally.
-benchmarks/compose_variants/
-tests/compile_time/
