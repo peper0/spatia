@@ -1,0 +1,4 @@
+Sphinx>=8,<10
+breathe>=4.35,<5
+myst-parser>=4,<5
+furo>=2025.7

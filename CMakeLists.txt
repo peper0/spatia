@@ -1,77 +1,125 @@
 cmake_minimum_required(VERSION 3.14)
 
-# Project name
-project(geometry2)
-
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+project(spatia VERSION 0.1.0 LANGUAGES CXX)
 
 # Generate compile_commands.json for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Add the library
-add_library(geometry2 src/geometry2.cpp
-        include/compose.hpp)
+# The library is header-only.
+add_library(spatia INTERFACE)
+add_library(spatia::spatia ALIAS spatia)
+target_compile_features(spatia INTERFACE cxx_std_23)
+target_include_directories(
+        spatia
+        INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
 
-# Include directories1
-target_include_directories(geometry2 PUBLIC include)
+# Installation and packaging
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+install(
+        DIRECTORY include/spatia
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(
+        TARGETS spatia
+        EXPORT spatia-targets
+)
+install(
+        EXPORT spatia-targets
+        NAMESPACE spatia::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/spatia
+)
+configure_package_config_file(
+        cmake/spatia-config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/spatia-config.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/spatia
+)
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/spatia-config-version.cmake"
+        COMPATIBILITY SameMajorVersion
+        ARCH_INDEPENDENT
+)
+install(
+        FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/spatia-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/spatia-config-version.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/spatia
+)
+
+option(BUILD_EXAMPLES "Build spatia examples" ON)
+if (BUILD_EXAMPLES)
+    add_subdirectory(examples/guide)
+endif ()
+
+option(BUILD_DOCS "Build Sphinx and Doxygen documentation" OFF)
+if (BUILD_DOCS)
+    add_subdirectory(docs)
+endif ()
 
 # Compile-time performance tests
 #
-# Every include/compose_variants/<variant>/compose.hpp gets a separate target
-# built from the same source. Run all variants sequentially with:
+# Optional and not part of the release: each benchmarks/compose_variants/
+# <variant>/compose.hpp is an alternative implementation of the transform
+# graph, built from the same sources to compare build times. The whole section
+# is skipped when those directories are absent.
+#
+# Run all variants sequentially with:
 #
 #   ./scripts/benchmark_compile_times.sh
 #
 # Or build just one, for example:
 #
 #   cmake --build build/compile-time \
-#       --target geometry2_compile_time_tests_variant_a_opt_large_graph
+#       --target spatia_compile_time_tests_variant_a_opt_large_graph
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/compose_variants" AND
+    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/compile_time")
 file(
-        GLOB GEOMETRY2_COMPOSE_VARIANT_HEADERS
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/compose_variants/*/compose.hpp"
+        GLOB SPATIA_COMPOSE_VARIANT_HEADERS
+        "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/compose_variants/*/compose.hpp"
 )
-list(SORT GEOMETRY2_COMPOSE_VARIANT_HEADERS)
+list(SORT SPATIA_COMPOSE_VARIANT_HEADERS)
 
-find_program(GEOMETRY2_TIME_EXECUTABLE NAMES time)
-if (NOT GEOMETRY2_TIME_EXECUTABLE)
+find_program(SPATIA_TIME_EXECUTABLE NAMES time)
+if (NOT SPATIA_TIME_EXECUTABLE)
     message(WARNING "The 'time' program was not found; max RSS will be unavailable")
 endif ()
-set(GEOMETRY2_COMPILE_TIME_METRICS_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/compile_time_metrics")
-file(MAKE_DIRECTORY "${GEOMETRY2_COMPILE_TIME_METRICS_DIRECTORY}")
+set(SPATIA_COMPILE_TIME_METRICS_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/compile_time_metrics")
+file(MAKE_DIRECTORY "${SPATIA_COMPILE_TIME_METRICS_DIRECTORY}")
 set(
-        GEOMETRY2_COMPILE_TIME_SCENARIOS
+        SPATIA_COMPILE_TIME_SCENARIOS
         large_graph
         many_uses
         four_trees_unrolled
         four_trees_generated
 )
 set(
-        GEOMETRY2_COMPILE_TIME_SOURCE_large_graph
+        SPATIA_COMPILE_TIME_SOURCE_large_graph
         "tests/compile_time/transforms_compile_time_large_graph.cpp"
 )
 set(
-        GEOMETRY2_COMPILE_TIME_SOURCE_many_uses
+        SPATIA_COMPILE_TIME_SOURCE_many_uses
         "tests/compile_time/transforms_compile_time_many_uses.cpp"
 )
 set(
-        GEOMETRY2_COMPILE_TIME_SOURCE_four_trees_unrolled
+        SPATIA_COMPILE_TIME_SOURCE_four_trees_unrolled
         "tests/compile_time/transforms_compile_time_four_trees_unrolled.cpp"
 )
 set(
-        GEOMETRY2_COMPILE_TIME_SOURCE_four_trees_generated
+        SPATIA_COMPILE_TIME_SOURCE_four_trees_generated
         "tests/compile_time/transforms_compile_time_four_trees_generated.cpp"
 )
 
-foreach (VARIANT_HEADER IN LISTS GEOMETRY2_COMPOSE_VARIANT_HEADERS)
+foreach (VARIANT_HEADER IN LISTS SPATIA_COMPOSE_VARIANT_HEADERS)
     get_filename_component(VARIANT_DIRECTORY "${VARIANT_HEADER}" DIRECTORY)
     get_filename_component(VARIANT_NAME "${VARIANT_DIRECTORY}" NAME)
 
-    foreach (SCENARIO IN LISTS GEOMETRY2_COMPILE_TIME_SCENARIOS)
-        set(VARIANT_TARGET "geometry2_compile_time_tests_${VARIANT_NAME}_${SCENARIO}")
-        set(VARIANT_SOURCE "${GEOMETRY2_COMPILE_TIME_SOURCE_${SCENARIO}}")
+    foreach (SCENARIO IN LISTS SPATIA_COMPILE_TIME_SCENARIOS)
+        set(VARIANT_TARGET "spatia_compile_time_tests_${VARIANT_NAME}_${SCENARIO}")
+        set(VARIANT_SOURCE "${SPATIA_COMPILE_TIME_SOURCE_${SCENARIO}}")
 
         add_library(
                 "${VARIANT_TARGET}"
@@ -83,17 +131,16 @@ foreach (VARIANT_HEADER IN LISTS GEOMETRY2_COMPOSE_VARIANT_HEADERS)
                 "${VARIANT_TARGET}"
                 BEFORE PRIVATE
                 "${VARIANT_DIRECTORY}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include"
         )
         if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             target_compile_options("${VARIANT_TARGET}" PRIVATE -ftemplate-depth=8192)
         endif ()
 
-        if (GEOMETRY2_TIME_EXECUTABLE)
-            set(VARIANT_METRICS_FILE "${GEOMETRY2_COMPILE_TIME_METRICS_DIRECTORY}/${VARIANT_NAME}_${SCENARIO}.csv")
+        if (SPATIA_TIME_EXECUTABLE)
+            set(VARIANT_METRICS_FILE "${SPATIA_COMPILE_TIME_METRICS_DIRECTORY}/${VARIANT_NAME}_${SCENARIO}.csv")
             set_property(
                     TARGET "${VARIANT_TARGET}"
-                    PROPERTY CXX_COMPILER_LAUNCHER "${GEOMETRY2_TIME_EXECUTABLE};--format=%e,%M;--output=${VARIANT_METRICS_FILE}"
+                    PROPERTY CXX_COMPILER_LAUNCHER "${SPATIA_TIME_EXECUTABLE};--format=%e,%M;--output=${VARIANT_METRICS_FILE}"
             )
         else ()
             set_property(
@@ -103,6 +150,7 @@ foreach (VARIANT_HEADER IN LISTS GEOMETRY2_COMPOSE_VARIANT_HEADERS)
         endif ()
     endforeach ()
 endforeach ()
+endif ()
 
 # Runtime benchmarks
 #
@@ -112,8 +160,8 @@ endforeach ()
 #       -DBUILD_TESTS=OFF \
 #       -DBUILD_BENCHMARKS=ON \
 #       -DCMAKE_BUILD_TYPE=Release
-#   cmake --build build/benchmark --target geometry2_inline_benchmark
-#   ./build/benchmark/geometry2_inline_benchmark
+#   cmake --build build/benchmark --target spatia_inline_benchmark
+#   ./build/benchmark/spatia_inline_benchmark
 option(BUILD_BENCHMARKS "Build Google Benchmark microbenchmarks" OFF)
 if (BUILD_BENCHMARKS)
     find_package(benchmark CONFIG QUIET)
@@ -134,30 +182,33 @@ if (BUILD_BENCHMARKS)
     endif ()
 
     add_executable(
-            geometry2_inline_benchmark
+            spatia_inline_benchmark
             benchmarks/transforms_inline_benchmark.cpp
     )
     target_link_libraries(
-            geometry2_inline_benchmark
+            spatia_inline_benchmark
             PRIVATE
-            geometry2
+            spatia
             benchmark::benchmark_main
     )
 endif ()
 
 # Add tests
-# Link only the targets provided by FindGTest. GMock target may not be available
-# depending on the system package. Remove GMock link unless tests use gmock.
 option(BUILD_TESTS "Build tests" ON)
 if (BUILD_TESTS)
     enable_testing()
     find_package(GTest REQUIRED)
     add_executable(
-            geometry2_tests
+            spatia_tests
             tests/transforms_tests.cpp
             tests/coordinate_systems/coordinate_systems_tests.cpp
-            tests/coordinate_systems/rotation_math_tests.cpp
+            tests/coordinate_systems/rotation_algebra_tests.cpp
+            tests/projective_tests.cpp
+            tests/spec_api_tests.cpp
     )
-    target_link_libraries(geometry2_tests PRIVATE geometry2 GTest::GTest GTest::Main)
-    add_test(NAME geometry2_tests COMMAND geometry2_tests)
+    target_link_libraries(spatia_tests PRIVATE spatia GTest::GTest GTest::Main)
+    add_test(NAME spatia_tests COMMAND spatia_tests)
+    if (TARGET spatia_guide)
+        add_test(NAME spatia_guide_smoke COMMAND spatia_guide)
+    endif ()
 endif ()
