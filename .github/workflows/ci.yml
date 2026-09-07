@@ -14,7 +14,7 @@ jobs:
         compiler: [gcc, clang]
         build_type: [Debug, Release]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install GTest
         run: |
@@ -60,7 +60,7 @@ jobs:
           struct B { static constexpr std::size_t dimension = 2; };
           int main() {
               using namespace spatia;
-              const auto rotation = to_rotation<A, B>(Angle::from_degrees(90.0));
+              const auto rotation = to_rotation<A, B>(degrees(90.0));
               return rotation(Vector<A>{1.0, 0.0}).dy() > 0.99 ? 0 : 1;
           }
           CPP
@@ -72,7 +72,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check clang-format
         run: |

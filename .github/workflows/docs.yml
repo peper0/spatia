@@ -18,14 +18,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Doxygen
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: pip
@@ -40,9 +40,11 @@ jobs:
           cmake --build build --target spatia_docs
 
       - name: Upload site
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: build/docs/html
+          # Preserve v3's inclusion of hidden files in the generated site.
+          include-hidden-files: true
 
   # Publishing runs only for the default branch: pull requests just prove that
   # the documentation still builds.
@@ -58,4 +60,4 @@ jobs:
       id-token: write
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
