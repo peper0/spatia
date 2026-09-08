@@ -17,13 +17,13 @@ template <std::size_t Dimension>
 SquareMatrix<Dimension> inverse(const SquareMatrix<Dimension>& matrix);
 
 /// Rotation about the X axis by the given angle in radians.
-Matrix<3, 3> rotation_x(Scalar radians);
+Matrix<3, 3> rotation_x(Scalar angle_of_from_in_to_radians);
 
 /// Rotation about the Y axis by the given angle in radians.
-Matrix<3, 3> rotation_y(Scalar radians);
+Matrix<3, 3> rotation_y(Scalar angle_of_from_in_to_radians);
 
 /// Rotation about the Z axis by the given angle in radians.
-Matrix<3, 3> rotation_z(Scalar radians);
+Matrix<3, 3> rotation_z(Scalar angle_of_from_in_to_radians);
 
 // Implementation ======================================================================================================
 
@@ -77,21 +77,21 @@ SquareMatrix<Dimension> inverse(const SquareMatrix<Dimension>& matrix) {
     return result;
 }
 
-inline Matrix<3, 3> rotation_x(Scalar radians) {
-    const Scalar cosine = std::cos(radians);
-    const Scalar sine = std::sin(radians);
+inline Matrix<3, 3> rotation_x(Scalar angle_of_from_in_to_radians) {
+    const Scalar cosine = std::cos(angle_of_from_in_to_radians);
+    const Scalar sine = std::sin(angle_of_from_in_to_radians);
     return Matrix<3, 3>{Scalar{1}, Scalar{0}, Scalar{0}, Scalar{0}, cosine, -sine, Scalar{0}, sine, cosine};
 }
 
-inline Matrix<3, 3> rotation_y(Scalar radians) {
-    const Scalar cosine = std::cos(radians);
-    const Scalar sine = std::sin(radians);
+inline Matrix<3, 3> rotation_y(Scalar angle_of_from_in_to_radians) {
+    const Scalar cosine = std::cos(angle_of_from_in_to_radians);
+    const Scalar sine = std::sin(angle_of_from_in_to_radians);
     return Matrix<3, 3>{cosine, Scalar{0}, sine, Scalar{0}, Scalar{1}, Scalar{0}, -sine, Scalar{0}, cosine};
 }
 
-inline Matrix<3, 3> rotation_z(Scalar radians) {
-    const Scalar cosine = std::cos(radians);
-    const Scalar sine = std::sin(radians);
+inline Matrix<3, 3> rotation_z(Scalar angle_of_from_in_to_radians) {
+    const Scalar cosine = std::cos(angle_of_from_in_to_radians);
+    const Scalar sine = std::sin(angle_of_from_in_to_radians);
     return Matrix<3, 3>{cosine, -sine, Scalar{0}, sine, cosine, Scalar{0}, Scalar{0}, Scalar{0}, Scalar{1}};
 }
 

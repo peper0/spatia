@@ -1,5 +1,8 @@
 #pragma once
 
+#include "spatia/algebra/matrix.hpp"
+#include "spatia/geometry/line.hpp"
+#include "spatia/transforms/detail/transform_graph_fwd.hpp"
 #include "spatia/transforms/rotation.hpp"
 #include "spatia/transforms/translation.hpp"
 
@@ -21,24 +24,26 @@ class Rigid {
                                           TransformSpec<Vector<To>, Vector<From>>, TransformSpec<Dir<To>, Dir<From>>,
                                           TransformSpec<Line<To>, Line<From>>, TransformSpec<Line<To>, Dir<From>>>;
 
-    constexpr Rigid() = default;
-    /// Builds the transform from the typed parts it is made of.
-    constexpr Rigid(Rotation<From, To> rotation, Translation<From, To> translation)
-        : rotation_(rotation), translation_(translation.translation()) {}
-    /// Builds the transform from raw algebra, bypassing the typed parts.
-    constexpr Rigid(Matrix<dimension, dimension> rotation, Vec<dimension> translation)
-        : rotation_(Rotation<From, To>{rotation}), translation_(Vector<To>{translation}) {}
+    constexpr Rigid() : rotation_(identity_matrix<dimension>()) {}
+    constexpr Rigid(Matrix<dimension, dimension> rotation, Point<To> from_origin_in_to)
+        : rotation_(rotation), from_origin_in_to_(from_origin_in_to) {}
 
-    constexpr const Rotation<From, To>& rotation() const noexcept { return rotation_; }
-    constexpr const Vector<To>& translation() const noexcept { return translation_; }
+    template <class Tmp>
+    constexpr Rigid(Rotation<Tmp, To> rotation, Translation<From, Tmp> translation)
+        : Rigid(rotation.to_matrix(), rotation(translation(Point<From>{}))) {}
+
+    constexpr const Matrix<dimension, dimension>& rotation() const noexcept { return rotation_; }
+    constexpr const Point<To>& from_origin_in_to() const noexcept { return from_origin_in_to_; }
 
     constexpr Point<To> operator()(const Point<From>& point, Tag<Point<To>> = {}) const {
-        return rotation_.rotate_about_shared_origin(point) + translation_;
+        return from_origin_in_to_ + (*this)(point - Point<From>{});
     }
     constexpr Vector<To> operator()(const Vector<From>& vector, Tag<Vector<To>> = {}) const {
-        return rotation_(vector);
+        return Vector<To>{rotation_ * vector.to_vec()};
     }
-    Dir<To> operator()(const Dir<From>& direction, Tag<Dir<To>> = {}) const { return rotation_(direction); }
+    Dir<To> operator()(const Dir<From>& direction, Tag<Dir<To>> = {}) const {
+        return Dir<To>::from_vector((*this)(to_vector(direction)));
+    }
     Line<To> operator()(const Line<From>& line, Tag<Line<To>> = {}) const;
 
     /// Deliberately without a default tag: a direction already maps to a
@@ -49,8 +54,8 @@ class Rigid {
     constexpr Rigid<To, From> inverse() const;
 
    private:
-    Rotation<From, To> rotation_;
-    Vector<To> translation_;
+    Matrix<dimension, dimension> rotation_;
+    Point<To> from_origin_in_to_;
 };
 
 /// Rigid transform usable in both directions: it is a `Rigid<A, B>`
@@ -69,16 +74,19 @@ class BiRigid : public Rigid<A, B>, public Rigid<B, A> {
                       TransformSpec<Line<A>, Line<B>>, TransformSpec<Line<B>, Dir<A>>, TransformSpec<Line<A>, Dir<B>>>;
 
     constexpr BiRigid() : BiRigid(Rigid<A, B>{}) {}
-    constexpr BiRigid(Rotation<A, B> rotation, Translation<A, B> translation)
+    constexpr BiRigid(Matrix<dimension, dimension> rotation, Point<B> a_origin_in_b)
+        : BiRigid(Rigid<A, B>{rotation, a_origin_in_b}) {}
+
+    template <class Tmp>
+    constexpr BiRigid(Rotation<Tmp, B> rotation, Translation<A, Tmp> translation)
         : BiRigid(Rigid<A, B>{rotation, translation}) {}
-    constexpr BiRigid(Matrix<dimension, dimension> rotation, Vec<dimension> translation)
-        : BiRigid(Rigid<A, B>{rotation, translation}) {}
+
     constexpr BiRigid(Rigid<A, B> forward) : Rigid<A, B>(forward), Rigid<B, A>(forward.inverse()) {}
 
     using Rigid<A, B>::operator();
     using Rigid<B, A>::operator();
     using Rigid<A, B>::rotation;
-    using Rigid<A, B>::translation;
+    using Rigid<A, B>::from_origin_in_to;
 
     constexpr BiRigid<B, A> inverse() const { return BiRigid<B, A>{static_cast<const Rigid<B, A>&>(*this)}; }
 };
@@ -92,13 +100,13 @@ Line<To> Rigid<From, To>::operator()(const Line<From>& line, Tag<Line<To>>) cons
 
 template <class From, class To>
 Line<To> Rigid<From, To>::operator()(const Dir<From>& direction, Tag<Line<To>>) const {
-    return line_through(Point<To>{} + translation_, (*this)(direction));
+    return line_through(from_origin_in_to_, (*this)(direction));
 }
 
 template <class From, class To>
 constexpr Rigid<To, From> Rigid<From, To>::inverse() const {
-    const auto inverse_rotation = rotation_.inverse();
-    return {inverse_rotation, Translation<To, From>{inverse_rotation(-translation_)}};
+    const auto inverse_rotation = transposed(rotation_);
+    return {inverse_rotation, Point<From>{inverse_rotation * (-from_origin_in_to_.to_vec())}};
 }
 
 }  // namespace spatia

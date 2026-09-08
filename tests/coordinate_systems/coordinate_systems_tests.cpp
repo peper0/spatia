@@ -70,7 +70,9 @@ auto uav_frb_to_uav_ned_transform() {
     return UavFrbUavNedTransform{identity_matrix<3>()};
 }
 
-auto uav_ned_to_ground_transform() { return UavNedGndNedTransform{identity_matrix<3>(), Vec<3>{10.0, 20.0, 30.0}}; }
+auto uav_ned_to_ground_transform() {
+    return UavNedGndNedTransform{identity_matrix<3>(), Point<GndNed>{10.0, 20.0, 30.0}};
+}
 
 auto coordinate_transforms() {
     return combine(view_to_picture_transform(), picture_camera_projection(), camera_to_uav_frb_transform(),

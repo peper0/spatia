@@ -21,6 +21,8 @@ class Translation {
 
     constexpr Translation() = default;
     constexpr explicit Translation(Vector<To> translation) : translation_(translation) {}
+    /// The origin of `From` expressed in `To`: maps `Point<From>{}` to `from_origin_in_to`.
+    constexpr explicit Translation(Point<To> from_origin_in_to) : Translation(from_origin_in_to - Point<To>{}) {}
 
     constexpr const Vector<To>& translation() const noexcept { return translation_; }
 
@@ -58,6 +60,8 @@ class BiTranslation : public Translation<A, B>, public Translation<B, A> {
 
     constexpr BiTranslation() : BiTranslation(Translation<A, B>{}) {}
     constexpr explicit BiTranslation(Vector<B> translation) : BiTranslation(Translation<A, B>{translation}) {}
+    /// The origin of `A` expressed in `B`.
+    constexpr explicit BiTranslation(Point<B> a_origin_in_b) : BiTranslation(Translation<A, B>{a_origin_in_b}) {}
     constexpr BiTranslation(Translation<A, B> forward)
         : Translation<A, B>(forward), Translation<B, A>(forward.inverse()) {}
 

@@ -33,10 +33,7 @@ void expect_coordinates_near(const Value& actual, Expected... expected_values) {
     }
 }
 
-Rigid<Space, OtherSpace> sample_pose() {
-    const auto rotation = to_rotation(EulerZYX<Space, OtherSpace>{Angle::from_degrees(90.0), Angle{}, Angle{}});
-    return {rotation, Translation<Space, OtherSpace>{Vector<OtherSpace>{1.0, 2.0, 3.0}}};
-}
+Rigid<Space, OtherSpace> sample_pose() { return {rotation_z(degrees(90.0)), Point<OtherSpace>{1.0, 2.0, 3.0}}; }
 
 TEST(MatrixUtilsTest, InvertsMatricesOfAnyDimension) {
     const SquareMatrix<4> matrix{2.0, 0.0, 0.0, 1.0, 0.0, 3.0, 0.0, -2.0, 0.0, 0.0, 4.0, 5.0, 0.0, 0.0, 0.0, 1.0};
@@ -112,13 +109,14 @@ TEST(NarrowingConversionTest, AcceptsTransformsThatSatisfyTheNarrowerInvariant) 
     const auto affine = to_affine(pose);
 
     const auto narrowed = to_rigid(affine);
-    expect_coordinates_near(narrowed.translation(), 1.0, 2.0, 3.0);
+    expect_coordinates_near(narrowed.from_origin_in_to(), 1.0, 2.0, 3.0);
 
     const Translation<Space, OtherSpace> shift{Vector<OtherSpace>{5.0, 6.0, 7.0}};
     const auto only_translation = to_translation(to_rigid(shift));
     expect_coordinates_near(only_translation.translation(), 5.0, 6.0, 7.0);
 
-    const auto only_rotation = to_rotation(to_rigid(pose.rotation()));
+    const Rotation<Space, OtherSpace> rotation{rotation_z(degrees(90.0))};
+    const auto only_rotation = to_rotation(to_rigid(rotation));
     EXPECT_NEAR(only_rotation.to_matrix()(1, 0), 1.0, tolerance);
 }
 

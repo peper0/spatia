@@ -116,19 +116,23 @@ The explicit template arguments on quaternion-to-rotation conversion attach the 
 
 ## 7. Move points with a rigid transform
 
-A bare rotation naturally transforms vectors and directions. A rigid transform also supplies the relationship between origins.
+A rotation transforms points, vectors, directions, and lines between systems with a shared origin. A rigid transform also supplies an offset between origins.
 
 ```cpp
-Rigid<Body, World> pose{
-    body_to_world,
-    Translation<Body, World>{Vector<World>{100.0, 50.0, -10.0}}
-};
+struct WorldAtBodyOrigin { static constexpr std::size_t dimension = 3; };
+
+Rotation<Body, WorldAtBodyOrigin> align_body{to_matrix(attitude)};
+Translation<WorldAtBodyOrigin, World> place_body{Point<World>{100.0, 50.0, -10.0}};
+Rigid<Body, World> pose = place_body * align_body;
 
 Point<World> sensor = pose(Point<Body>{1.0, 0.0, 0.0});
 Vector<World> velocity = pose(Vector<Body>{5.0, 0.0, 0.0});
 ```
 
-Translation affects the point but not the vector. If two systems deliberately share an origin, a rotation can transform a point through the explicit `rotate_about_shared_origin()` member.
+The intermediate system shares `Body`'s origin and `World`'s axes, so each
+transform satisfies its contract. Translation affects the point but not the
+vector. Constructing `Rigid` directly takes a rotation `Matrix` and a
+`Point<To>` giving the origin of `From` expressed in `To`.
 
 ## 8. Work in 2D and cross the algebra boundary
 
@@ -178,8 +182,8 @@ auto transforms = combine(
     BiAffine<View, Picture>{Matrix<2, 2>{2.0, 0.0, 0.0, 2.0},
                             Vector<Picture>{320.0, 240.0}},
     BiPerspectiveProjection<Camera, Picture>{100.0, 100.0, 320.0, 240.0},
-    BiRigid<Camera, World>{camera_to_world_rotation,
-                           Translation<Camera, World>{Vector<World>{10.0, 20.0, 30.0}}});
+    BiRigid<Camera, World>{camera_to_world_rotation.to_matrix(),
+                           Point<World>{10.0, 20.0, 30.0}});
 
 // View pixel -> Picture pixel -> Camera direction -> World line:
 Line<World> ray = transforms.to<Line<World>>(Point<View>{0.0, 0.0});
@@ -194,8 +198,8 @@ Three properties are worth remembering:
   `Bi*` variants (`BiRotation`, `BiRigid`, `BiAffine`,
   `BiTranslation`) when the graph should traverse a transform both
   ways.
-- Rotations move points through the graph via the shared-origin
-  interpretation, exactly as `rotate_about_shared_origin()` would outside it.
+- Rotations move points through the graph with the same shared-origin
+  assumption as an ordinary `rotation(point)` call.
 - The search minimizes the number of edges, not any notion of accuracy: if
   you add custom edges that lose information (like a projection), a short
   lossy path wins over a long exact one.

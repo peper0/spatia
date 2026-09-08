@@ -138,8 +138,7 @@ TEST(SpecRotationTest, ConvertsAppliesInvertsAndComposesRotations) {
 }
 
 TEST(SpecTransformTest, AppliesRigidAndAffinesByGeometryKind) {
-    const auto rotation = to_rotation(EulerZYX<Body, Ground>{Angle::from_degrees(90.0), Angle{}, Angle{}});
-    const Rigid<Body, Ground> rigid{rotation, Translation<Body, Ground>{Vector<Ground>{10.0, 20.0, 30.0}}};
+    const Rigid<Body, Ground> rigid{rotation_z(degrees(90.0)), Point<Ground>{10.0, 20.0, 30.0}};
 
     const auto point = rigid(Point<Body>{1.0, 0.0, 0.0});
     const auto vector = rigid(Vector<Body>{1.0, 0.0, 0.0});

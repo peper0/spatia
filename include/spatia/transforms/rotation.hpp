@@ -11,7 +11,7 @@ namespace spatia {
 /// Pure rotation mapping objects from `From` into `To`, in that direction
 /// only. Use `inverse()` for the opposite direction, or `BiRotation` when a
 /// single object has to serve both directions. Works in two dimensions (a
-/// rotation in the plane) and in three.
+/// rotation in the plane) and in three. The two systems share an origin.
 template <class From, class To>
 class Rotation {
     static_assert(dimension_v<From> == dimension_v<To>);
@@ -37,6 +37,7 @@ class Rotation {
 
     // The destination tag defaults, so each conversion is a single overload
     // that both plain calls and the transform graph can use.
+    constexpr Point<To> operator()(const Point<From>& point, Tag<Point<To>> = {}) const;
     constexpr Vector<To> operator()(const Vector<From>& vector, Tag<Vector<To>> = {}) const {
         return Vector<To>{matrix_ * vector.to_vec()};
     }
@@ -44,17 +45,6 @@ class Rotation {
         return Dir<To>::from_vector((*this)(to_vector(direction)));
     }
     Line<To> operator()(const Line<From>& line, Tag<Line<To>> = {}) const;
-
-    constexpr Point<To> rotate_about_shared_origin(const Point<From>& point) const {
-        return Point<To>{matrix_ * point.to_vec()};
-    }
-
-    /// Deliberately without a default tag: rotating a point assumes that the
-    /// two systems share an origin, and that assumption has to be spelled out
-    /// — either by `rotate_about_shared_origin` or by naming the destination.
-    constexpr Point<To> operator()(const Point<From>& point, Tag<Point<To>>) const {
-        return rotate_about_shared_origin(point);
-    }
 
     constexpr Rotation<To, From> inverse() const { return Rotation<To, From>{transposed(matrix_)}; }
 
@@ -83,8 +73,6 @@ class BiRotation : public Rotation<A, B>, public Rotation<B, A> {
 
     using Rotation<A, B>::operator();
     using Rotation<B, A>::operator();
-    using Rotation<A, B>::rotate_about_shared_origin;
-    using Rotation<B, A>::rotate_about_shared_origin;
     using Rotation<A, B>::to_matrix;
     using Rotation<A, B>::to_quaternion;
 
@@ -94,8 +82,13 @@ class BiRotation : public Rotation<A, B>, public Rotation<B, A> {
 // Implementation ======================================================================================================
 
 template <class From, class To>
+constexpr Point<To> Rotation<From, To>::operator()(const Point<From>& point, Tag<Point<To>>) const {
+    return Point<To>{matrix_ * point.to_vec()};
+}
+
+template <class From, class To>
 Line<To> Rotation<From, To>::operator()(const Line<From>& line, Tag<Line<To>>) const {
-    return line_through(rotate_about_shared_origin(closest_point_to_origin(line)), (*this)(dir_of(line)));
+    return line_through((*this)(closest_point_to_origin(line)), (*this)(dir_of(line)));
 }
 
 }  // namespace spatia

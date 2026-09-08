@@ -10,7 +10,7 @@ auto body_to_world = to_rotation(EulerZYX<Body, World>{
     degrees(30), degrees(5), Angle{}});
 
 Point<Body> p_in_body{1, 0, 0};
-Point<World> p_in_world = body_to_world.rotate_about_shared_origin(p_in_body);
+Point<World> p_in_world = body_to_world(p_in_body);
 Vector<World> v_in_world = p_in_world - Point<World>{0, 0, 0};
 // p_in_world - Point<Body>{0, 0, 0}  // compile-time error: different systems
 ```
@@ -25,10 +25,8 @@ auto camera_to_body = to_rotation(EulerZYX<Camera, Body>{
     degrees(90), Angle{}, Angle{}});
 
 auto transforms = combine(
-    BiRigid<Camera, Body>{camera_to_body,
-                          Translation<Camera, Body>{Vector<Body>{0.1, 0.0, -0.2}}},
-    BiRigid<Body, World>{body_to_world,
-                         Translation<Body, World>{Vector<World>{10.0, 20.0, 30.0}}});
+    BiRigid<Camera, Body>{camera_to_body.to_matrix(), Point<Body>{0.1, 0.0, -0.2}},
+    BiRigid<Body, World>{body_to_world.to_matrix(), Point<World>{10.0, 20.0, 30.0}});
 
 Point<Camera> target{0.0, 0.0, 5.0};
 

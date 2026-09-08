@@ -105,8 +105,8 @@ TEST(TransformCompositionTest, RotationFollowedByRotationStaysRotation) {
 TEST(TransformCompositionTest, SelectedRigidCombinationsStayRigid) {
     const auto rotation_ab = to_rotation(EulerZYX<FrameA, FrameB>{Angle::from_radians(0.3), Angle{}, Angle{}});
     const auto rotation_bc = to_rotation(EulerZYX<FrameB, FrameC>{Angle{}, Angle::from_radians(-0.4), Angle{}});
-    const Rigid<FrameA, FrameB> rigid_ab{rotation_ab, Translation<FrameA, FrameB>{FrameB::Vector{1.0, 2.0, 3.0}}};
-    const Rigid<FrameB, FrameC> rigid_bc{rotation_bc, Translation<FrameB, FrameC>{FrameC::Vector{4.0, 5.0, 6.0}}};
+    const Rigid<FrameA, FrameB> rigid_ab{rotation_ab.to_matrix(), Point<FrameB>{1.0, 2.0, 3.0}};
+    const Rigid<FrameB, FrameC> rigid_bc{rotation_bc.to_matrix(), Point<FrameC>{4.0, 5.0, 6.0}};
     const FrameA::Point input{2.0, -1.0, 0.5};
 
     const auto rotation_then_rigid = rigid_bc * rotation_ab;
@@ -118,7 +118,7 @@ TEST(TransformCompositionTest, SelectedRigidCombinationsStayRigid) {
     static_assert(std::same_as<std::remove_cvref_t<decltype(rigid_then_rigid)>, Rigid<FrameA, FrameC>>);
 
     const auto expected_rotation_then_rigid = rigid_bc(rotation_ab(input, Tag<FrameB::Point>{}));
-    const auto expected_rigid_then_rotation = rotation_bc.rotate_about_shared_origin(rigid_ab(input));
+    const auto expected_rigid_then_rotation = rotation_bc(rigid_ab(input));
     const auto expected_rigid_then_rigid = rigid_bc(rigid_ab(input));
 
     expect_coordinates_near(rotation_then_rigid(input), expected_rotation_then_rigid[0],
@@ -157,7 +157,7 @@ static_assert(SingleConversionTransform<decltype([](const Point<FrameA>& p) { re
 static_assert(std::is_invocable_v<Rotation<FrameA, FrameB>, Vector<FrameA>>);
 static_assert(std::is_invocable_v<Rotation<FrameA, FrameB>, Dir<FrameA>>);
 static_assert(std::is_invocable_v<Rotation<FrameA, FrameB>, Line<FrameA>>);
-static_assert(!std::is_invocable_v<Rotation<FrameA, FrameB>, Point<FrameA>>);
+static_assert(std::is_invocable_v<Rotation<FrameA, FrameB>, Point<FrameA>>);
 static_assert(std::is_invocable_v<Rotation<FrameA, FrameB>, Point<FrameA>, Tag<Point<FrameB>>>);
 static_assert(std::same_as<std::invoke_result_t<Rigid<FrameA, FrameB>, Dir<FrameA>>, Dir<FrameB>>);
 static_assert(std::same_as<std::invoke_result_t<Rigid<FrameA, FrameB>, Dir<FrameA>, Tag<Line<FrameB>>>, Line<FrameB>>);
@@ -166,6 +166,13 @@ static_assert(!std::is_invocable_v<Rotation<FrameA, FrameB>, Vector<FrameB>>);
 static_assert(std::is_invocable_v<BiRotation<FrameA, FrameB>, Vector<FrameB>>);
 static_assert(!std::is_invocable_v<Rigid<FrameA, FrameB>, Point<FrameB>>);
 static_assert(std::is_invocable_v<BiRigid<FrameA, FrameB>, Point<FrameB>>);
+static_assert(!std::constructible_from<Rigid<FrameA, FrameB>, Rotation<FrameA, FrameB>, Translation<FrameA, FrameB>>);
+static_assert(!std::constructible_from<BiRigid<FrameA, FrameB>, Rotation<FrameA, FrameB>, Translation<FrameA, FrameB>>);
+static_assert(!std::constructible_from<Rigid<FrameA, FrameB>, Matrix<3, 3>, Point<FrameA>>);
+static_assert(!std::constructible_from<BiRigid<FrameA, FrameB>, Matrix<3, 3>, Point<FrameA>>);
+static_assert(!std::constructible_from<Rigid<FrameA, FrameB>, Matrix<3, 3>, Vec<3>>);
+static_assert(!std::constructible_from<BiRigid<FrameA, FrameB>, Matrix<3, 3>, Vec<3>>);
+static_assert(std::same_as<decltype(std::declval<const Rigid<FrameA, FrameB>&>().rotation()), const Matrix<3, 3>&>);
 
 TEST(BiTransformTest, RotationExposesBothDirectionsFromOneObject) {
     const auto forward =
@@ -182,12 +189,46 @@ TEST(BiTransformTest, RotationExposesBothDirectionsFromOneObject) {
 }
 
 TEST(BiTransformTest, RigidRoundTripsPoints) {
-    const auto rotation = to_rotation(EulerZYX<FrameA, FrameB>{Angle::from_radians(0.4), Angle{}, Angle{}});
-    const BiRigid<FrameA, FrameB> both{rotation, Translation<FrameA, FrameB>{FrameB::Vector{1.0, 2.0, 3.0}}};
+    const Point<FrameB> a_origin_in_b{1.0, 2.0, 3.0};
+    const BiRigid<FrameA, FrameB> both{rotation_z(Angle::from_radians(0.4)), a_origin_in_b};
+
+    EXPECT_EQ(both.from_origin_in_to(), a_origin_in_b);
+    EXPECT_EQ(both(Point<FrameA>{}), a_origin_in_b);
+    expect_coordinates_near(both(a_origin_in_b), 0.0, 0.0, 0.0);
 
     const Point<FrameA> input{2.0, -1.0, 0.5};
     const Point<FrameB> moved = both(input);
     expect_coordinates_near(both(moved), input[0], input[1], input[2]);
+}
+
+TEST(RigidTest, ConstructsThroughDeducedIntermediateFrame) {
+    constexpr Rotation<PlaneB, PlaneC> rotation{Matrix<2, 2>{0.0, -1.0, 1.0, 0.0}};
+    constexpr Translation<PlaneA, PlaneB> translation{Point<PlaneB>{1.0, 2.0}};
+    constexpr auto rigid = Rigid{rotation, translation};
+
+    static_assert(std::same_as<std::remove_cvref_t<decltype(rigid)>, Rigid<PlaneA, PlaneC>>);
+    static_assert(rigid.from_origin_in_to() == Point<PlaneC>{-2.0, 1.0});
+    static_assert(rigid.inverse()(Point<PlaneC>{-2.0, 1.0}) == Point<PlaneA>{});
+
+    const Point<PlaneA> input{3.0, 4.0};
+    EXPECT_EQ(rigid(input), (Point<PlaneC>{-6.0, 4.0}));
+    EXPECT_EQ(rigid(input), rotation(translation(input)));
+    EXPECT_EQ(rigid(Vector<PlaneA>{3.0, 4.0}), (Vector<PlaneC>{-4.0, 3.0}));
+}
+
+TEST(BiTransformTest, ConstructsRigidThroughDeducedIntermediateFrame) {
+    const Rotation<FrameB, FrameC> rotation{rotation_z(degrees(90.0))};
+    const Translation<FrameA, FrameB> translation{Point<FrameB>{1.0, 2.0, 3.0}};
+    const auto both = BiRigid{rotation, translation};
+
+    static_assert(std::same_as<std::remove_cvref_t<decltype(both)>, BiRigid<FrameA, FrameC>>);
+    expect_coordinates_near(both.from_origin_in_to(), -2.0, 1.0, 3.0);
+
+    const Point<FrameA> input{4.0, -1.0, 0.5};
+    const Point<FrameC> expected{-1.0, 5.0, 3.5};
+    expect_coordinates_near(both(input), expected[0], expected[1], expected[2]);
+    expect_coordinates_near(both(expected), input[0], input[1], input[2]);
+    expect_coordinates_near(both.inverse()(expected), input[0], input[1], input[2]);
 }
 
 TEST(Rotation2DTest, RotatesInThePlaneAndRoundTripsAngle) {
@@ -199,7 +240,8 @@ TEST(Rotation2DTest, RotatesInThePlaneAndRoundTripsAngle) {
     const BiRotation<PlaneA, PlaneB> both{rotation};
     expect_coordinates_near(both(rotated), 1.0, 0.0);
 
-    const Rigid<PlaneA, PlaneB> rigid{rotation, Translation<PlaneA, PlaneB>{Vector<PlaneB>{10.0, 20.0}}};
+    const Rigid<PlaneA, PlaneB> rigid{rotation.to_matrix(), Point<PlaneB>{10.0, 20.0}};
+    EXPECT_EQ(rigid(Point<PlaneA>{}), rigid.from_origin_in_to());
     expect_coordinates_near(rigid(Point<PlaneA>{1.0, 0.0}), 10.0, 21.0);
     expect_coordinates_near(rigid.inverse()(Point<PlaneB>{10.0, 21.0}), 1.0, 0.0);
 }
@@ -219,16 +261,19 @@ TEST(TranslationTest, MixesWithRotationsAndRigidTransformsIntoRigid) {
     const auto quarter_turn_bc = to_rotation<PlaneB, PlaneC>(Angle::from_degrees(90.0));
     const Translation<PlaneA, PlaneB> translation_ab{Vector<PlaneB>{1.0, 2.0}};
     const Translation<PlaneB, PlaneC> translation_bc{Vector<PlaneC>{10.0, 20.0}};
-    const Rigid<PlaneB, PlaneC> rigid_bc{quarter_turn_bc, translation_bc};
+    const Rigid<PlaneA, PlaneB> rigid_ab{quarter_turn_ab.to_matrix(), translation_ab(Point<PlaneA>{})};
+    const Rigid<PlaneB, PlaneC> rigid_bc{quarter_turn_bc.to_matrix(), translation_bc(Point<PlaneB>{})};
     const Point<PlaneA> input{3.0, 4.0};
 
     const auto rotation_then_translation = translation_bc * quarter_turn_ab;
     const auto translation_then_rotation = quarter_turn_bc * translation_ab;
     const auto translation_then_rigid = rigid_bc * translation_ab;
+    const auto rigid_then_translation = translation_bc * rigid_ab;
 
     static_assert(std::same_as<std::remove_cvref_t<decltype(rotation_then_translation)>, Rigid<PlaneA, PlaneC>>);
     static_assert(std::same_as<std::remove_cvref_t<decltype(translation_then_rotation)>, Rigid<PlaneA, PlaneC>>);
     static_assert(std::same_as<std::remove_cvref_t<decltype(translation_then_rigid)>, Rigid<PlaneA, PlaneC>>);
+    static_assert(std::same_as<std::remove_cvref_t<decltype(rigid_then_translation)>, Rigid<PlaneA, PlaneC>>);
 
     // A quarter turn maps (3, 4) to (-4, 3); adding (10, 20) gives (6, 23).
     expect_coordinates_near(rotation_then_translation(input), 6.0, 23.0);
@@ -236,6 +281,7 @@ TEST(TranslationTest, MixesWithRotationsAndRigidTransformsIntoRigid) {
     expect_coordinates_near(translation_then_rotation(input), -6.0, 4.0);
     // The same rotation plus the rigid offset (10, 20) gives (4, 24).
     expect_coordinates_near(translation_then_rigid(input), 4.0, 24.0);
+    expect_coordinates_near(rigid_then_translation(input), 7.0, 25.0);
 }
 
 }  // namespace

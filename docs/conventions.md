@@ -28,20 +28,21 @@ Each conversion is a single `operator()` overload taking the destination tag
 as a defaulted argument, so `transform(object)` and
 `transform(object, Tag<Destination>{})` are the same function. The tag is
 spelled out only where one source type has several destinations and the plain
-call would be ambiguous, or where naming the destination is the point:
-
-- `Rotation` maps a `Point` only through `rotate_about_shared_origin` or an
-  explicit `Tag<Point<To>>`, because rotating a point assumes the two systems
-  share an origin.
-- `Rigid` maps a `Dir` to a `Dir` by default; producing the line through the
-  transformed origin instead needs `Tag<Line<To>>`.
+call would be ambiguous, or where naming the destination is the point.
+For example, `Rigid` maps a `Dir` to a `Dir` by default; producing the line
+through the transformed origin instead needs `Tag<Line<To>>`.
 
 ## Naming and conversions
 
-- A transform assembled from smaller transforms takes them as such: `Rigid`
-  is built from a `Rotation` and a `Translation`. A second constructor takes
-  the raw algebra instead (`Matrix` and `Vec`), so every constructor is either
-  fully typed or fully raw.
+- `Rigid` is built from a rotation `Matrix` and a `Point<To>` named
+  `from_origin_in_to`, the origin of `From` expressed in `To`.
+  Its template constructor takes `Rotation<Mid, To>` and
+  `Translation<From, Mid>`, applying the translation first and then the
+  rotation. `Mid` is deduced from the arguments; `BiRigid` accepts the same
+  pair and computes the inverse direction automatically.
+  Typed transforms compose through an intermediate system, for example
+  `Translation<Mid, To> * Rotation<From, Mid>`. The rotation shares an origin
+  with `Mid`, and the translation shares axes with `To`.
 - When a type has factory functions, they are named `from_...`
   (`Angle::from_radians`, `Dir::from_vector`).
 - Free conversion functions are named `to_...` (`to_rotation`, `to_euler_zyx`,
@@ -121,7 +122,11 @@ Therefore `q_left * q_right` applies `q_right` first. Both `q` and `-q` represen
 
 ## Rotation and points
 
-`Rotation` has `operator()` for `Vector` and `Dir`. It intentionally does not provide ordinary call syntax for `Point`, because a rotation alone does not encode the relationship between coordinate-system origins. When the caller knows the origins coincide, `rotate_about_shared_origin(point)` makes that assumption explicit. General points use `Rigid` or `Affine`.
+`Rotation<From, To>` assumes that the two coordinate systems share an origin. It provides ordinary `rotation(object)` calls for `Point`, `Vector`, `Dir`, and `Line`, with an optional destination tag. Use `Rigid` or `Affine` when the transformation also includes an offset between origins.
+
+`Rigid::rotation()` returns the rotation matrix. Converting the whole rigid
+transform to a `Rotation<From, To>` requires `to_rotation(rigid)`, which checks
+that its translation is zero within the supplied tolerance.
 
 ## Transform hierarchy
 

@@ -12,6 +12,10 @@ struct BodyNed {
     static constexpr std::size_t dimension = 3;
 };
 
+struct GndNedAtBodyOrigin {
+    static constexpr std::size_t dimension = 3;
+};
+
 struct Camera {
     static constexpr std::size_t dimension = 3;
 };
@@ -100,7 +104,9 @@ int main() {
     const Rotation<Camera, GndNed> same_composition = body_to_ground * camera_to_body;
     const Rotation<GndNed, Camera> ground_to_camera = camera_to_ground.inverse();
 
-    const Rigid<BodyNed, GndNed> pose{body_to_ground, Translation<BodyNed, GndNed>{Vector<GndNed>{100.0, 50.0, -20.0}}};
+    const Rotation<BodyNed, GndNedAtBodyOrigin> align_body{to_matrix(attitude)};
+    const Translation<GndNedAtBodyOrigin, GndNed> place_body{Point<GndNed>{100.0, 50.0, -20.0}};
+    const Rigid<BodyNed, GndNed> pose = place_body * align_body;
     const Point<GndNed> sensor_in_ground = pose(Point<BodyNed>{1.0, 0.0, 0.0});
 
     std::cout << "pixel: " << shifted_pixel.x() << ", " << shifted_pixel.y()

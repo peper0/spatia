@@ -150,17 +150,17 @@ constexpr Rotation<A, C> operator*(const Rotation<B, C>& bc, const Rotation<A, B
 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Rigid<B, C>& bc, const Rigid<A, B>& ab) {
-    return {bc.rotation() * ab.rotation(), Translation<A, C>{bc.rotation()(ab.translation()) + bc.translation()}};
+    return {bc.rotation() * ab.rotation(), bc(ab.from_origin_in_to())};
 }
 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Rigid<B, C>& bc, const Rotation<A, B>& ab) {
-    return {bc.rotation() * ab, Translation<A, C>{bc.translation()}};
+    return {bc.rotation() * ab.to_matrix(), bc.from_origin_in_to()};
 }
 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Rotation<B, C>& bc, const Rigid<A, B>& ab) {
-    return {bc * ab.rotation(), Translation<A, C>{bc(ab.translation())}};
+    return {bc.to_matrix() * ab.rotation(), bc(ab.from_origin_in_to())};
 }
 
 template <class A, class B, class C>
@@ -178,24 +178,22 @@ constexpr Translation<A, C> operator*(const Translation<B, C>& bc, const Transla
 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Rigid<B, C>& bc, const Translation<A, B>& ab) {
-    return {Rotation<A, C>{bc.rotation().to_matrix()},
-            Translation<A, C>{bc.rotation()(ab.translation()) + bc.translation()}};
+    return {bc.rotation(), bc(ab(Point<A>{}))};
 }
 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Translation<B, C>& bc, const Rigid<A, B>& ab) {
-    return {Rotation<A, C>{ab.rotation().to_matrix()},
-            Translation<A, C>{Vector<C>{ab.translation().to_vec()} + bc.translation()}};
+    return {ab.rotation(), bc(ab.from_origin_in_to())};
 }
 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Translation<B, C>& bc, const Rotation<A, B>& ab) {
-    return {Rotation<A, C>{ab.to_matrix()}, Translation<A, C>{bc.translation()}};
+    return {ab.to_matrix(), bc(Point<B>{})};
 }
 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Rotation<B, C>& bc, const Translation<A, B>& ab) {
-    return {Rotation<A, C>{bc.to_matrix()}, Translation<A, C>{bc(ab.translation())}};
+    return {bc.to_matrix(), bc(ab(Point<A>{}))};
 }
 
 // Every product below reduces to multiplying the homogeneous matrices, so the

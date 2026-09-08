@@ -8,6 +8,7 @@
 #include "spatia/algebra/quaternion.hpp"
 #include "spatia/geometry/euler.hpp"
 #include "spatia/transforms/affine.hpp"
+#include "spatia/transforms/detail/angle_matrix.hpp"
 #include "spatia/transforms/detail/quaternion_matrix.hpp"
 #include "spatia/transforms/perspective_projection.hpp"
 #include "spatia/transforms/projective.hpp"
@@ -19,7 +20,7 @@ namespace spatia {
 
 template <class From, class To>
     requires(dimension_v<From> == 3 && dimension_v<To> == 3)
-Rotation<From, To> to_rotation(const EulerZYX<From, To>& angles);
+Rotation<From, To> to_rotation(const EulerZYX<From, To>& angles_of_from_in_to);
 
 template <class From, class To>
 Rotation<From, To> to_rotation(const Quaternion& quaternion);
@@ -32,7 +33,7 @@ Quaternion to_quaternion(const Rotation<From, To>& transform);
 
 template <class From, class To>
     requires(dimension_v<From> == 2 && dimension_v<To> == 2)
-Rotation<From, To> to_rotation(Angle angle);
+Rotation<From, To> to_rotation(Angle angle_of_from_in_to);
 
 template <class From, class To>
     requires(dimension_v<From> == 2 && dimension_v<To> == 2)
@@ -107,9 +108,9 @@ Translation<From, To> to_translation(const Rigid<From, To>& transform, Scalar to
 
 template <class From, class To>
     requires(dimension_v<From> == 3 && dimension_v<To> == 3)
-Rotation<From, To> to_rotation(const EulerZYX<From, To>& angles) {
-    return Rotation<From, To>{rotation_z(angles.z().to_radians()) * rotation_y(angles.y().to_radians()) *
-                              rotation_x(angles.x().to_radians())};
+Rotation<From, To> to_rotation(const EulerZYX<From, To>& angles_of_from_in_to) {
+    return Rotation<From, To>{rotation_z(angles_of_from_in_to.z()) * rotation_y(angles_of_from_in_to.y()) *
+                              rotation_x(angles_of_from_in_to.x())};
 }
 
 template <class From, class To>
@@ -140,9 +141,9 @@ Quaternion to_quaternion(const Rotation<From, To>& transform) {
 
 template <class From, class To>
     requires(dimension_v<From> == 2 && dimension_v<To> == 2)
-Rotation<From, To> to_rotation(Angle angle) {
-    const Scalar cosine = std::cos(angle.to_radians());
-    const Scalar sine = std::sin(angle.to_radians());
+Rotation<From, To> to_rotation(Angle angle_of_from_in_to) {
+    const Scalar cosine = std::cos(angle_of_from_in_to.to_radians());
+    const Scalar sine = std::sin(angle_of_from_in_to.to_radians());
     return Rotation<From, To>{Matrix<2, 2>{cosine, -sine, sine, cosine}};
 }
 
@@ -178,17 +179,17 @@ constexpr Affine<From, To> to_affine(const Translation<From, To>& transform) {
 
 template <class From, class To>
 constexpr Affine<From, To> to_affine(const Rigid<From, To>& transform) {
-    return {transform.rotation().to_matrix(), transform.translation()};
+    return {transform.rotation(), transform.from_origin_in_to() - Point<To>{}};
 }
 
 template <class From, class To>
 constexpr Rigid<From, To> to_rigid(const Rotation<From, To>& transform) {
-    return {transform, Translation<From, To>{}};
+    return {transform.to_matrix(), Point<To>{}};
 }
 
 template <class From, class To>
 constexpr Rigid<From, To> to_rigid(const Translation<From, To>& transform) {
-    return {Rotation<From, To>{}, transform};
+    return {identity_matrix<dimension_v<From>>(), transform(Point<From>{})};
 }
 
 namespace detail {
@@ -274,7 +275,7 @@ Rigid<From, To> to_rigid(const Affine<From, To>& transform, Scalar tolerance) {
     if (!detail::is_orthonormal(transform.linear(), tolerance)) {
         throw std::invalid_argument("Affine transform is not rigid: its linear part is not a rotation");
     }
-    return {transform.linear(), transform.translation().to_vec()};
+    return {transform.linear(), Point<To>{} + transform.translation()};
 }
 
 template <class From, class To>
@@ -287,10 +288,10 @@ Rotation<From, To> to_rotation(const Affine<From, To>& transform, Scalar toleran
 
 template <class From, class To>
 Rotation<From, To> to_rotation(const Rigid<From, To>& transform, Scalar tolerance) {
-    if (!detail::is_near_zero(transform.translation().to_vec(), tolerance)) {
+    if (!detail::is_near_zero(transform.from_origin_in_to().to_vec(), tolerance)) {
         throw std::invalid_argument("Rigid transform is not a rotation: it translates the origin");
     }
-    return transform.rotation();
+    return Rotation<From, To>{transform.rotation()};
 }
 
 template <class From, class To>
@@ -300,7 +301,7 @@ Translation<From, To> to_translation(const Affine<From, To>& transform, Scalar t
 
 template <class From, class To>
 Translation<From, To> to_translation(const Rigid<From, To>& transform, Scalar tolerance) {
-    const auto difference = transform.rotation().to_matrix();
+    const auto difference = transform.rotation();
     const auto identity = identity_matrix<dimension_v<From>>();
     for (std::size_t row = 0; row < dimension_v<From>; ++row) {
         for (std::size_t column = 0; column < dimension_v<From>; ++column) {
@@ -309,7 +310,7 @@ Translation<From, To> to_translation(const Rigid<From, To>& transform, Scalar to
             }
         }
     }
-    return Translation<From, To>{transform.translation()};
+    return Translation<From, To>{transform.from_origin_in_to()};
 }
 
 }  // namespace spatia
