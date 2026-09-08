@@ -1,9 +1,19 @@
-find_package(Doxygen REQUIRED)
+find_package(Doxygen REQUIRED OPTIONAL_COMPONENTS dot)
 find_program(SPHINX_EXECUTABLE NAMES sphinx-build)
 
 if (NOT SPHINX_EXECUTABLE)
     message(FATAL_ERROR
             "sphinx-build was not found; install docs/requirements.txt")
+endif ()
+
+set(SPATIA_DOXYGEN_HAVE_DOT NO)
+set(SPATIA_DOXYGEN_DOT_PATH "")
+if (TARGET Doxygen::dot)
+    set(SPATIA_DOXYGEN_HAVE_DOT YES)
+    get_target_property(SPATIA_DOXYGEN_DOT_EXECUTABLE Doxygen::dot IMPORTED_LOCATION)
+    get_filename_component(SPATIA_DOXYGEN_DOT_PATH "${SPATIA_DOXYGEN_DOT_EXECUTABLE}" DIRECTORY)
+else ()
+    message(STATUS "Graphviz dot was not found; Doxygen diagrams are disabled")
 endif ()
 
 set(SPATIA_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../include")
