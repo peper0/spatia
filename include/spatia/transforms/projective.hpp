@@ -1,14 +1,12 @@
 #pragma once
 
-#include <cmath>
 #include <cstddef>
-#include <limits>
-#include <stdexcept>
 
 #include "spatia/algebra/matrix.hpp"
 #include "spatia/algebra/matrix_utils.hpp"
 #include "spatia/geometry/line.hpp"
 #include "spatia/geometry/point.hpp"
+#include "spatia/transforms/detail/homogeneous_coordinates.hpp"
 #include "spatia/transforms/detail/transform_graph_fwd.hpp"
 
 namespace spatia {
@@ -73,23 +71,7 @@ constexpr typename Projective<From, To>::HomogeneousMatrix Projective<From, To>:
 
 template <class From, class To>
 Point<To> Projective<From, To>::operator()(const Point<From>& point, Tag<Point<To>>) const {
-    Vec<from_dimension + 1> homogeneous;
-    for (std::size_t i = 0; i < from_dimension; ++i) {
-        homogeneous[i] = point[i];
-    }
-    homogeneous[from_dimension] = Scalar{1};
-
-    const Vec<to_dimension + 1> projected = matrix_ * homogeneous;
-    const Scalar weight = projected[to_dimension];
-    if (std::abs(weight) <= std::numeric_limits<Scalar>::epsilon()) {
-        throw std::domain_error("Projective transform maps this point to infinity");
-    }
-
-    Vec<to_dimension> result;
-    for (std::size_t i = 0; i < to_dimension; ++i) {
-        result[i] = projected[i] / weight;
-    }
-    return Point<To>{result};
+    return Point<To>{detail::from_homogeneous(matrix_ * detail::to_homogeneous(point.to_vec()))};
 }
 
 template <class From, class To>

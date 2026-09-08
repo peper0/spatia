@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <concepts>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 
@@ -91,6 +92,24 @@ TEST(ProjectiveTest, PerspectiveProjectionBecomesProjectiveWhenComposed) {
     static_assert(std::same_as<std::remove_cvref_t<decltype(projection * rotation)>, Projective<OtherSpace, Plane>>);
     static_assert(
         std::same_as<std::remove_cvref_t<decltype(projection * to_projective(pose))>, Projective<Space, Plane>>);
+}
+
+TEST(ProjectiveTest, MapsBetweenDimensionsWithNegativeHomogeneousWeight) {
+    const Projective<Plane, Space> projective{
+        Matrix<4, 3>{2.0, 0.0, 4.0, 0.0, 3.0, -2.0, 0.0, 0.0, 6.0, 0.0, 0.0, -2.0}};
+
+    EXPECT_THAT(projective(Point<Plane>{3.0, 4.0}), coordinates_near(Point<Space>{-5.0, -5.0, -3.0}, tolerance));
+}
+
+TEST(ProjectiveTest, RejectsPointsAtInfinity) {
+    const Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
+    for (const Scalar weight : {Scalar{}, epsilon, -epsilon}) {
+        auto matrix = identity_matrix<3>();
+        matrix(2, 2) = weight;
+        const Projective<Plane, Plane> projective{matrix};
+
+        EXPECT_THROW(static_cast<void>(projective(Point<Plane>{1.0, 2.0})), std::domain_error);
+    }
 }
 
 TEST(NarrowingConversionTest, AcceptsTransformsThatSatisfyTheNarrowerInvariant) {
