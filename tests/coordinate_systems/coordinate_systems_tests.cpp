@@ -148,8 +148,10 @@ TEST(GenericTransformsTest, AffineAndPerspectiveTransformsExposeOnlyValidKinds) 
 
     const auto camera_direction = projection(picture_point, Tag<Camera::Dir>{});
     const double normalization = std::sqrt(1.02);
-    EXPECT_THAT(to_vector(camera_direction), coordinates_near(Camera::Vector{0.1 / normalization, -0.1 / normalization, 1.0 / normalization}, 1e-9));
-    EXPECT_THAT(projection(camera_direction, Tag<Picture::Point>{}), coordinates_near(Picture::Point{330.0, 230.0}, 1e-9));
+    EXPECT_THAT(to_vector(camera_direction),
+                coordinates_near(Camera::Vector{0.1 / normalization, -0.1 / normalization, 1.0 / normalization}, 1e-9));
+    EXPECT_THAT(projection(camera_direction, Tag<Picture::Point>{}),
+                coordinates_near(Picture::Point{330.0, 230.0}, 1e-9));
 }
 
 TEST(GenericTransformsTest, ComposesSingleConversionTransformsIntoOne) {
@@ -173,8 +175,10 @@ TEST(GenericTransformsTest, RigidMovesPointsButNotVectors) {
     const auto rigid = uav_ned_to_ground_transform();
 
     EXPECT_THAT(rotation(Camera::Point{1.0, 2.0, 3.0}), coordinates_near(UavFrb::Point{3.0, 1.0, 2.0}, 1e-9));
-    EXPECT_THAT(rigid(UavNed::Point{1.0, 2.0, 3.0}, Tag<GndNed::Point>{}), coordinates_near(GndNed::Point{11.0, 22.0, 33.0}, 1e-9));
-    EXPECT_THAT(rigid(UavNed::Vector{1.0, 2.0, 3.0}, Tag<GndNed::Vector>{}), coordinates_near(GndNed::Vector{1.0, 2.0, 3.0}, 1e-9));
+    EXPECT_THAT(rigid(UavNed::Point{1.0, 2.0, 3.0}, Tag<GndNed::Point>{}),
+                coordinates_near(GndNed::Point{11.0, 22.0, 33.0}, 1e-9));
+    EXPECT_THAT(rigid(UavNed::Vector{1.0, 2.0, 3.0}, Tag<GndNed::Vector>{}),
+                coordinates_near(GndNed::Vector{1.0, 2.0, 3.0}, 1e-9));
 }
 
 TEST(CoordinateTransformGraphTest, ComposesConcreteCoordinateSystemsByGeometryKind) {

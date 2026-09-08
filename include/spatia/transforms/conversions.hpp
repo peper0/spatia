@@ -66,10 +66,12 @@ BiAffine<From, To> to_bidirectional(const Affine<From, To>& transform);
 
 /// The reverse perspective mapping recovers a direction in space.
 template <class FromSpace, class ToPlane>
-BiPerspectiveProjection<FromSpace, ToPlane> to_bidirectional(const PerspectiveProjection<FromSpace, ToPlane>& transform);
+BiPerspectiveProjection<FromSpace, ToPlane> to_bidirectional(
+    const PerspectiveProjection<FromSpace, ToPlane>& transform);
 
 template <class FromPlane, class ToSpace>
-BiPerspectiveProjection<ToSpace, FromPlane> to_bidirectional(const PerspectiveUnprojection<FromPlane, ToSpace>& transform);
+BiPerspectiveProjection<ToSpace, FromPlane> to_bidirectional(
+    const PerspectiveUnprojection<FromPlane, ToSpace>& transform);
 
 /// The default tolerance of the narrowing conversions below, expressed as an
 /// absolute error on matrix entries and translation coordinates.
@@ -211,12 +213,14 @@ BiAffine<From, To> to_bidirectional(const Affine<From, To>& transform) {
 }
 
 template <class FromSpace, class ToPlane>
-BiPerspectiveProjection<FromSpace, ToPlane> to_bidirectional(const PerspectiveProjection<FromSpace, ToPlane>& transform) {
+BiPerspectiveProjection<FromSpace, ToPlane> to_bidirectional(
+    const PerspectiveProjection<FromSpace, ToPlane>& transform) {
     return {transform.scale_x(), transform.scale_y(), transform.center_x(), transform.center_y()};
 }
 
 template <class FromPlane, class ToSpace>
-BiPerspectiveProjection<ToSpace, FromPlane> to_bidirectional(const PerspectiveUnprojection<FromPlane, ToSpace>& transform) {
+BiPerspectiveProjection<ToSpace, FromPlane> to_bidirectional(
+    const PerspectiveUnprojection<FromPlane, ToSpace>& transform) {
     return {transform.scale_x(), transform.scale_y(), transform.center_x(), transform.center_y()};
 }
 
