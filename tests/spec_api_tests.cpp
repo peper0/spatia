@@ -86,7 +86,7 @@ TEST(SpecAlgebraTest, SeparatesRawCoordinatesFromGeometry) {
 }
 
 TEST(SpecAngleTest, UsesExplicitUnitsAndExplicitNormalization) {
-    const auto half_turn = Angle::from_degrees(180.0);
+    constexpr auto half_turn = degrees(180.0);
     EXPECT_NEAR(half_turn.to_radians(), std::numbers::pi, 1e-12);
     EXPECT_NEAR(Angle::from_radians(-0.5).to_degrees(), -90.0 / std::numbers::pi, 1e-12);
     EXPECT_NEAR(Angle::from_degrees(450.0).normalized_unsigned().to_degrees(), 90.0, 1e-12);

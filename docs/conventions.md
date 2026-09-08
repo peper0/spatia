@@ -43,7 +43,7 @@ call would be ambiguous, or where naming the destination is the point:
   the raw algebra instead (`Matrix` and `Vec`), so every constructor is either
   fully typed or fully raw.
 - When a type has factory functions, they are named `from_...`
-  (`Angle::from_degrees`, `Dir::from_vector`).
+  (`Angle::from_radians`, `Dir::from_vector`).
 - Free conversion functions are named `to_...` (`to_rotation`, `to_euler_zyx`,
   `to_vector`).
 - Whenever possible a conversion is a free function, so the source type does
@@ -100,7 +100,7 @@ For a conventional NED system `(X north, Y east, Z down)`, positive `z` turns no
 
 ## Angle
 
-`Angle` stores radians internally, but this is not exposed through an ambiguous scalar constructor. `from_degrees` and `from_radians` label input units. Arithmetic does not normalize automatically.
+`Angle` stores radians internally, but this is not exposed through an ambiguous scalar constructor. The free function `degrees(value)` returns an `Angle` from a value in degrees; use `Angle::from_radians(value)` for radians. Arithmetic does not normalize automatically.
 
 - `normalized_unsigned()` returns `[0, 2pi)`.
 - `normalized_signed()` returns `[-pi, pi)`.

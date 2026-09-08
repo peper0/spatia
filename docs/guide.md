@@ -33,13 +33,13 @@ static_assert(dimension_v<Body> == 3);
 
 ## 2. Create a rotation between them
 
-Angles never accept an unlabelled scalar. Use degrees or radians explicitly. `EulerZYX<From, To>` also carries the direction of the transformation.
+Angles never accept an unlabelled scalar. Use `degrees(value)` or `Angle::from_radians(value)` to specify the input unit explicitly. `EulerZYX<From, To>` also carries the direction of the transformation.
 
 ```cpp
 EulerZYX<Body, World> attitude{
-    Angle::from_degrees(30.0),  // Z: yaw
-    Angle::from_degrees(5.0),   // Y: pitch
-    Angle::from_degrees(1.0)    // X: roll
+    degrees(30.0),  // Z: yaw
+    degrees(5.0),   // Y: pitch
+    degrees(1.0)    // X: roll
 };
 
 Rotation<Body, World> body_to_world = to_rotation(attitude);
@@ -58,7 +58,7 @@ Vector<Body> restored = world_to_body(world_forward);
 
 struct Camera { static constexpr std::size_t dimension = 3; };
 Rotation<Camera, Body> camera_to_body = to_rotation(
-    EulerZYX<Camera, Body>{Angle::from_degrees(2), Angle{}, Angle{}});
+    EulerZYX<Camera, Body>{degrees(2), Angle{}, Angle{}});
 
 Rotation<Camera, World> camera_to_world = body_to_world * camera_to_body;
 ```
@@ -72,8 +72,8 @@ single `Rotation` rather than a wrapper.
 
 ```cpp
 EulerZY<World> look_angles{
-    Angle::from_degrees(45.0),
-    Angle::from_degrees(10.0)
+    degrees(45.0),
+    degrees(10.0)
 };
 
 Dir<World> look = to_dir(look_angles);
@@ -154,7 +154,7 @@ single angle:
 
 ```cpp
 Rotation<Image, Screen> upright = to_rotation<Image, Screen>(
-    Angle::from_degrees(90.0));
+    degrees(90.0));
 Angle recovered = to_angle(upright);
 ```
 

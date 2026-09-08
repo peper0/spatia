@@ -39,6 +39,9 @@ class Angle {
     Scalar radians_{};
 };
 
+/// Constructs an angle from a value in degrees.
+constexpr Angle degrees(Scalar value) noexcept;
+
 constexpr Angle operator+(Angle left, Angle right) noexcept;
 constexpr Angle operator-(Angle left, Angle right) noexcept;
 constexpr Angle operator-(Angle angle) noexcept;
@@ -63,6 +66,8 @@ inline Angle Angle::normalized_signed() const noexcept {
     const Scalar shifted = (Angle{radians_ + std::numbers::pi_v<Scalar>}.normalized_unsigned()).to_radians();
     return Angle{shifted - std::numbers::pi_v<Scalar>};
 }
+
+constexpr Angle degrees(Scalar value) noexcept { return Angle::from_degrees(value); }
 
 constexpr Angle operator+(Angle left, Angle right) noexcept {
     left += right;

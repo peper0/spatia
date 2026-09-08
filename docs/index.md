@@ -7,7 +7,7 @@ struct Camera { static constexpr std::size_t dimension = 3; };
 struct World  { static constexpr std::size_t dimension = 3; };
 
 Rotation<Camera, World> camera_to_world = to_rotation(
-    EulerZYX<Camera, World>{Angle::from_degrees(20), Angle{}, Angle{}});
+    EulerZYX<Camera, World>{degrees(20), Angle{}, Angle{}});
 Vector<World> ray = camera_to_world(Vector<Camera>{0, 0, 1});
 ```
 
