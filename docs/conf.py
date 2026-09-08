@@ -27,4 +27,5 @@ html_theme_options = {
     },
 }
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+# index.rst includes the Markdown landing page and adds Sphinx navigation.
+exclude_patterns = ["index.md", "_build", "Thumbs.db", ".DS_Store"]

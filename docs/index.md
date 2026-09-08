@@ -14,14 +14,10 @@ Vector<World> ray = camera_to_world(Vector<Camera>{0, 0, 1});
 The library is split into algebra, geometry, and transformation layers without splitting the public namespace. Start with the guide, then use the conventions page as the precise contract.
 
 The <a href="api/index.html">API reference</a> is generated from the public
-headers by Doxygen. It is written next to these pages after Sphinx runs, so
-Sphinx cannot check the link itself — hence the raw anchor.
+headers by Doxygen.
 
-```{toctree}
-:maxdepth: 2
-:caption: Contents
+## Contents
 
-guide
-conventions
-coding_style
-```
+- [Step-by-step guide](guide.md)
+- [Conventions](conventions.md)
+- [Coding style](coding_style.md)

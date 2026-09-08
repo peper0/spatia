@@ -1,8 +1,10 @@
-See also [coding_style](./coding_style.md).
+# Conventions
 
-# Design conventions
+See also [Coding style](coding_style.md).
 
-## Transforms
+## Design conventions
+
+### Transforms
 
 A **transform** is a functor with one or more `operator()` overloads. A plain
 function, a lambda, `Rotation`, `Rigid`, `PerspectiveProjection`, and the results
@@ -32,7 +34,7 @@ call would be ambiguous, or where naming the destination is the point.
 For example, `Rigid` maps a `Dir` to a `Dir` by default; producing the line
 through the transformed origin instead needs `Tag<Line<To>>`.
 
-## Naming and conversions
+### Naming and conversions
 
 - `Rigid` is built from a rotation `Matrix` and a `Point<To>` named
   `from_origin_in_to`, the origin of `From` expressed in `To`.
@@ -52,14 +54,14 @@ through the transformed origin instead needs `Tag<Line<To>>`.
   implementation is more efficient, the same function may additionally be
   provided as a method (`Rotation::to_matrix`, `Rotation::to_quaternion`).
 
-# Mathematical conventions and decisions
+## Mathematical conventions and decisions
 
 This page is the precise contract for representation conversions.
 
 
 `CoordinateSystem<Derived, Dimension>` is an optional facade that additionally provides `Derived::Point`, `Derived::Vector`, `Derived::Dir`, and `Derived::Line` aliases. The scalar type is not configurable.
 
-## Rotation convention
+### Rotation convention
 
 Rotations are active, right-handed rotations acting on column vectors. `Rotation<From, To>` stores the matrix that maps coordinates expressed in `From` to coordinates expressed in `To`. It transforms in that direction only; `inverse()` returns the opposite direction, and `BiRotation<A, B>` derives from both `Rotation<A, B>` and `Rotation<B, A>` so one object serves both directions (the same pattern exists for rigid, affine, and translation transforms).
 
@@ -72,7 +74,7 @@ ac = bc * ab
 v_c = bc(ab(v_a))
 ```
 
-## Euler Z-Y-X
+### Euler Z-Y-X
 
 `EulerZYX<From, To>{z, y, x}` uses intrinsic Z-Y-prime-X-double-prime Tait-Bryan angles. The equivalent matrix and extrinsic description are:
 
@@ -87,7 +89,7 @@ Positive angles follow the right-hand rule. Conversion from a matrix returns:
 - `z` and `x` in `[-pi, pi]` away from numerical boundary equivalences;
 - at gimbal lock, `x = 0` and `z` stores the remaining observable rotation.
 
-## Euler Z-Y directions and NED
+### Euler Z-Y directions and NED
 
 `EulerZY<System>{z, y}` parameterizes the direction obtained by applying `Rz(z) * Ry(y)` to the positive X axis:
 
@@ -99,14 +101,14 @@ For a conventional NED system `(X north, Y east, Z down)`, positive `z` turns no
 
 `to_euler_zy` returns `y` in `[-pi/2, pi/2]` and `z` in `[-pi, pi]`. At either vertical pole azimuth is undefined, so the canonical result chooses `z = 0`.
 
-## Angle
+### Angle
 
 `Angle` stores radians internally, but this is not exposed through an ambiguous scalar constructor. The free function `degrees(value)` returns an `Angle` from a value in degrees; use `Angle::from_radians(value)` for radians. Arithmetic does not normalize automatically.
 
 - `normalized_unsigned()` returns `[0, 2pi)`.
 - `normalized_signed()` returns `[-pi, pi)`.
 
-## Quaternion
+### Quaternion
 
 `Quaternion` is untagged algebra. Components and constructor arguments are scalar-first `(w, x, y, z)`. Multiplication is the Hamilton product. A unit quaternion acts as:
 
@@ -116,11 +118,11 @@ v_rotated = q * (0, v) * conjugate(q)
 
 Therefore `q_left * q_right` applies `q_right` first. Both `q` and `-q` represent the same rotation. Matrix-to-quaternion conversion normalizes the result and chooses the sign for which the first non-zero component in `(w, x, y, z)` is positive.
 
-## Direction representation
+### Direction representation
 
 `Dir<System>` stores a normalized Cartesian vector, not two angles. One component is mathematically redundant, but the representation has no angular seam, applies a matrix directly, and requires no trigonometry during ordinary transformations. Construction normalizes and rejects a zero vector. The coordinates are read through `to_vector(direction)`, so the invariant cannot be broken.
 
-## Rotation and points
+### Rotation and points
 
 `Rotation<From, To>` assumes that the two coordinate systems share an origin. It provides ordinary `rotation(object)` calls for `Point`, `Vector`, `Dir`, and `Line`, with an optional destination tag. Use `Rigid` or `Affine` when the transformation also includes an offset between origins.
 
@@ -128,7 +130,7 @@ Therefore `q_left * q_right` applies `q_right` first. Both `q` and `-q` represen
 transform to a `Rotation<From, To>` requires `to_rotation(rigid)`, which checks
 that its translation is zero within the supplied tolerance.
 
-## Transform hierarchy
+### Transform hierarchy
 
 `Rotation`, `Rigid`, `Affine`, and `Projective` are separate value types with progressively weaker invariants. There is no common base class: this avoids virtual dispatch and keeps composition results concrete.
 
@@ -136,6 +138,6 @@ Multiplying two transforms yields the narrowest kind that can represent the resu
 
 Going the other way is a **narrowing conversion**, and it can fail: `to_rigid(affine, tolerance)`, `to_rotation(rigid, tolerance)`, and `to_translation(rigid, tolerance)` check that the argument already satisfies the narrower invariant within `tolerance` (an absolute error on matrix entries and coordinates, `default_narrowing_tolerance` by default) and throw `std::invalid_argument` otherwise. The widening direction — `to_affine`, `to_rigid` from a rotation or translation, `to_projective` — always succeeds and takes no tolerance.
 
-## Projection direction
+### Projection direction
 
 `PerspectiveProjection<FromSpace, ToPlane>` projects points of a 3D system onto a 2D surface; `PerspectiveUnprojection<FromPlane, ToSpace>` goes back and yields a `Dir`, because the distance along the projection axis is not recoverable. `BiPerspectiveProjection<Space, Plane>` derives from both, following the same pattern as the other `Bi*` transforms.
