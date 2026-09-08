@@ -205,8 +205,9 @@ if (BUILD_TESTS)
             tests/coordinate_systems/rotation_algebra_tests.cpp
             tests/projective_tests.cpp
             tests/spec_api_tests.cpp
+            tests/matchers_tests.cpp
     )
-    target_link_libraries(spatia_tests PRIVATE spatia GTest::GTest GTest::Main)
+    target_link_libraries(spatia_tests PRIVATE spatia GTest::GTest GTest::Main GTest::gmock)
     add_test(NAME spatia_tests COMMAND spatia_tests)
     if (TARGET spatia_guide)
         add_test(NAME spatia_guide_smoke COMMAND spatia_guide)

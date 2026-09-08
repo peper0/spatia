@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "spatia/spatia.hpp"
+#include "spatia/testing/matchers.hpp"
 
 namespace {
 
@@ -25,14 +26,6 @@ struct Plane {
     static constexpr std::size_t dimension = 2;
 };
 
-template <class Value, class... Expected>
-void expect_coordinates_near(const Value& actual, Expected... expected_values) {
-    const double expected[]{static_cast<double>(expected_values)...};
-    for (std::size_t index = 0; index < sizeof...(Expected); ++index) {
-        EXPECT_NEAR(actual[index], expected[index], tolerance);
-    }
-}
-
 Rigid<Space, OtherSpace> sample_pose() { return {rotation_z(degrees(90.0)), Point<OtherSpace>{1.0, 2.0, 3.0}}; }
 
 TEST(MatrixUtilsTest, InvertsMatricesOfAnyDimension) {
@@ -40,11 +33,7 @@ TEST(MatrixUtilsTest, InvertsMatricesOfAnyDimension) {
     const auto product = matrix * inverse(matrix);
     const auto identity = identity_matrix<4>();
 
-    for (std::size_t row = 0; row < 4; ++row) {
-        for (std::size_t column = 0; column < 4; ++column) {
-            EXPECT_NEAR(product(row, column), identity(row, column), tolerance);
-        }
-    }
+    EXPECT_THAT(product, matrix_near(identity, tolerance));
 
     const SquareMatrix<4> singular{1.0, 2.0, 3.0, 4.0, 2.0, 4.0, 6.0, 8.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0};
     EXPECT_THROW(static_cast<void>(inverse(singular)), std::invalid_argument);
@@ -57,7 +46,7 @@ TEST(ProjectiveTest, AgreesWithTheAffineTransformItWidens) {
     const Point<Space> input{1.0, 1.0, 1.0};
 
     const auto expected = affine(input);
-    expect_coordinates_near(projective(input), expected.x(), expected.y(), expected.z());
+    EXPECT_THAT(projective(input), coordinates_near(expected, tolerance));
 }
 
 TEST(ProjectiveTest, RoundTripsThroughItsInverse) {
@@ -65,7 +54,7 @@ TEST(ProjectiveTest, RoundTripsThroughItsInverse) {
     const Point<Space> input{4.0, -1.0, 0.5};
 
     const auto moved = projective(input);
-    expect_coordinates_near(projective.inverse()(moved), input.x(), input.y(), input.z());
+    EXPECT_THAT(projective.inverse()(moved), coordinates_near(input, tolerance));
 }
 
 TEST(ProjectiveTest, MapsLinesToLines) {
@@ -94,7 +83,7 @@ TEST(ProjectiveTest, PerspectiveProjectionBecomesProjectiveWhenComposed) {
 
     const Point<Space> input{2.0, 0.0, 1.0};
     const auto expected = projection(pose(input));
-    expect_coordinates_near(composed(input), expected.x(), expected.y());
+    EXPECT_THAT(composed(input), coordinates_near(expected, tolerance));
 
     // Composing with a rotation or a plain projective transform also stays
     // projective.
@@ -109,15 +98,15 @@ TEST(NarrowingConversionTest, AcceptsTransformsThatSatisfyTheNarrowerInvariant) 
     const auto affine = to_affine(pose);
 
     const auto narrowed = to_rigid(affine);
-    expect_coordinates_near(narrowed.from_origin_in_to(), 1.0, 2.0, 3.0);
+    EXPECT_THAT(narrowed.from_origin_in_to(), coordinates_near(Point<OtherSpace>{1.0, 2.0, 3.0}, tolerance));
 
     const Translation<Space, OtherSpace> shift{Vector<OtherSpace>{5.0, 6.0, 7.0}};
     const auto only_translation = to_translation(to_rigid(shift));
-    expect_coordinates_near(only_translation.translation(), 5.0, 6.0, 7.0);
+    EXPECT_THAT(only_translation.translation(), coordinates_near(shift.translation(), tolerance));
 
     const Rotation<Space, OtherSpace> rotation{rotation_z(degrees(90.0))};
     const auto only_rotation = to_rotation(to_rigid(rotation));
-    EXPECT_NEAR(only_rotation.to_matrix()(1, 0), 1.0, tolerance);
+    EXPECT_THAT(only_rotation.to_matrix(), matrix_near(rotation.to_matrix(), tolerance));
 }
 
 TEST(NarrowingConversionTest, RejectsTransformsThatViolateTheNarrowerInvariant) {

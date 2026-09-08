@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <array>
 #include <cmath>
 #include <concepts>
 #include <numbers>
@@ -8,6 +7,7 @@
 #include "spatia/algebra/matrix.hpp"
 #include "spatia/geometry/coordinate_system.hpp"
 #include "spatia/geometry/line_utils.hpp"
+#include "spatia/testing/matchers.hpp"
 #include "spatia/transforms.hpp"
 
 namespace {
@@ -43,14 +43,6 @@ using UavNedGndNedTransform = BiRigid<UavNed, GndNed>;
 
 template <class Left, class Right>
 concept Subtractable = requires(const Left& left, const Right& right) { left - right; };
-
-template <class Value, class... Expected>
-void expect_coordinates_near(const Value& actual, Expected... expected_coordinates) {
-    const std::array<double, sizeof...(Expected)> expected{static_cast<double>(expected_coordinates)...};
-    for (std::size_t i = 0; i < expected.size(); ++i) {
-        EXPECT_NEAR(actual[i], expected[i], 1e-9);
-    }
-}
 
 auto view_to_picture_transform() {
     return ViewPictureTransform{SquareMatrix<2>{2.0, 0.0, 0.0, 2.0}, Picture::Vector{320.0, 240.0}};
@@ -91,7 +83,8 @@ static_assert(std::same_as<SquareMatrix<3>, Matrix<3, 3>>);
 TEST(CoordinateMathTest, SupportsRectangularMatricesSeparatelyFromSquareMatrices) {
     const Matrix<2, 3> select_xy{1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
 
-    expect_coordinates_near(Picture::Vector{select_xy * Camera::Vector{4.0, 5.0, 6.0}.to_vec()}, 4.0, 5.0);
+    EXPECT_THAT((Picture::Vector{select_xy * Camera::Vector{4.0, 5.0, 6.0}.to_vec()}),
+                coordinates_near(Picture::Vector{4.0, 5.0}, 1e-9));
 }
 
 TEST(CoordinatePrimitivesTest, KeepsPointVectorAndFrameSemanticsInTheTypeSystem) {
@@ -114,16 +107,16 @@ TEST(CoordinatePrimitivesTest, KeepsPointVectorAndFrameSemanticsInTheTypeSystem)
 
 TEST(CoordinatePrimitivesTest, StoresDirAndLineInCanonicalCalculationFriendlyForm) {
     const auto direction = dir_of(GndNed::Vector{2.0, 0.0, 0.0});
-    expect_coordinates_near(to_vector(direction), 1.0, 0.0, 0.0);
+    EXPECT_THAT(to_vector(direction), coordinates_near(GndNed::Vector{1.0, 0.0, 0.0}, 1e-9));
     EXPECT_NEAR(norm(to_vector(direction)), 1.0, 1e-9);
-    expect_coordinates_near(to_vector(dir_to(GndNed::Point{2.0, 0.0, 0.0})), 1.0, 0.0, 0.0);
+    EXPECT_THAT(to_vector(dir_to(GndNed::Point{2.0, 0.0, 0.0})), coordinates_near(GndNed::Vector{1.0, 0.0, 0.0}, 1e-9));
 
     const auto line = line_through(GndNed::Point{10.0, 20.0, 30.0}, direction);
 
     // Moving the input anchor along the line would produce exactly the same
     // stored point: the closest one to the GndNed origin.
-    expect_coordinates_near(closest_point_to_origin(line), 0.0, 20.0, 30.0);
-    expect_coordinates_near(to_vector(dir_of(line)), 1.0, 0.0, 0.0);
+    EXPECT_THAT(closest_point_to_origin(line), coordinates_near(GndNed::Point{0.0, 20.0, 30.0}, 1e-9));
+    EXPECT_THAT(to_vector(dir_of(line)), coordinates_near(GndNed::Vector{1.0, 0.0, 0.0}, 1e-9));
 
     EXPECT_THROW(static_cast<void>(dir_of(GndNed::Vector{})), std::invalid_argument);
 }
@@ -150,14 +143,13 @@ TEST(GenericTransformsTest, AffineAndPerspectiveTransformsExposeOnlyValidKinds) 
     const auto projection = picture_camera_projection();
 
     const auto picture_point = view_picture(View::Point{5.0, -5.0}, Tag<Picture::Point>{});
-    expect_coordinates_near(picture_point, 330.0, 230.0);
-    expect_coordinates_near(view_picture(picture_point, Tag<View::Point>{}), 5.0, -5.0);
+    EXPECT_THAT(picture_point, coordinates_near(Picture::Point{330.0, 230.0}, 1e-9));
+    EXPECT_THAT(view_picture(picture_point, Tag<View::Point>{}), coordinates_near(View::Point{5.0, -5.0}, 1e-9));
 
     const auto camera_direction = projection(picture_point, Tag<Camera::Dir>{});
     const double normalization = std::sqrt(1.02);
-    expect_coordinates_near(to_vector(camera_direction), 0.1 / normalization, -0.1 / normalization,
-                            1.0 / normalization);
-    expect_coordinates_near(projection(camera_direction, Tag<Picture::Point>{}), 330.0, 230.0);
+    EXPECT_THAT(to_vector(camera_direction), coordinates_near(Camera::Vector{0.1 / normalization, -0.1 / normalization, 1.0 / normalization}, 1e-9));
+    EXPECT_THAT(projection(camera_direction, Tag<Picture::Point>{}), coordinates_near(Picture::Point{330.0, 230.0}, 1e-9));
 }
 
 TEST(GenericTransformsTest, ComposesSingleConversionTransformsIntoOne) {
@@ -173,16 +165,16 @@ TEST(GenericTransformsTest, ComposesSingleConversionTransformsIntoOne) {
     // coordinates.
     const Camera::Dir ray = view_to_ray(View::Point{0.0, 0.0});
     const auto expected = projection(Picture::Point{0.0, 0.0}, Tag<Camera::Dir>{});
-    expect_coordinates_near(to_vector(ray), to_vector(expected)[0], to_vector(expected)[1], to_vector(expected)[2]);
+    EXPECT_THAT(to_vector(ray), coordinates_near(to_vector(expected), 1e-9));
 }
 
 TEST(GenericTransformsTest, RigidMovesPointsButNotVectors) {
     const auto rotation = camera_to_uav_frb_transform();
     const auto rigid = uav_ned_to_ground_transform();
 
-    expect_coordinates_near(rotation(Camera::Point{1.0, 2.0, 3.0}, Tag<UavFrb::Point>{}), 3.0, 1.0, 2.0);
-    expect_coordinates_near(rigid(UavNed::Point{1.0, 2.0, 3.0}, Tag<GndNed::Point>{}), 11.0, 22.0, 33.0);
-    expect_coordinates_near(rigid(UavNed::Vector{1.0, 2.0, 3.0}, Tag<GndNed::Vector>{}), 1.0, 2.0, 3.0);
+    EXPECT_THAT(rotation(Camera::Point{1.0, 2.0, 3.0}), coordinates_near(UavFrb::Point{3.0, 1.0, 2.0}, 1e-9));
+    EXPECT_THAT(rigid(UavNed::Point{1.0, 2.0, 3.0}, Tag<GndNed::Point>{}), coordinates_near(GndNed::Point{11.0, 22.0, 33.0}, 1e-9));
+    EXPECT_THAT(rigid(UavNed::Vector{1.0, 2.0, 3.0}, Tag<GndNed::Vector>{}), coordinates_near(GndNed::Vector{1.0, 2.0, 3.0}, 1e-9));
 }
 
 TEST(CoordinateTransformGraphTest, ComposesConcreteCoordinateSystemsByGeometryKind) {
@@ -192,17 +184,17 @@ TEST(CoordinateTransformGraphTest, ComposesConcreteCoordinateSystemsByGeometryKi
     // it to GndNed +X, while the rigid translation places the resulting line
     // through the UAV position (10, 20, 30).
     const auto ground_line = transforms.to<GndNed::Line>(View::Point{0.0, 0.0});
-    expect_coordinates_near(to_vector(dir_of(ground_line)), 1.0, 0.0, 0.0);
-    expect_coordinates_near(closest_point_to_origin(ground_line), 0.0, 20.0, 30.0);
+    EXPECT_THAT(to_vector(dir_of(ground_line)), coordinates_near(GndNed::Vector{1.0, 0.0, 0.0}, 1e-9));
+    EXPECT_THAT(closest_point_to_origin(ground_line), coordinates_near(GndNed::Point{0.0, 20.0, 30.0}, 1e-9));
 
     const auto ground_point = transforms.to<GndNed::Point>(Camera::Point{1.0, 2.0, 3.0});
-    expect_coordinates_near(ground_point, 13.0, 21.0, 32.0);
+    EXPECT_THAT(ground_point, coordinates_near(GndNed::Point{13.0, 21.0, 32.0}, 1e-9));
 
     const auto ground_vector = transforms.to<GndNed::Vector>(Camera::Vector{1.0, 2.0, 3.0});
-    expect_coordinates_near(ground_vector, 3.0, 1.0, 2.0);
+    EXPECT_THAT(ground_vector, coordinates_near(GndNed::Vector{3.0, 1.0, 2.0}, 1e-9));
 
-    expect_coordinates_near(transforms.to<Camera::Point>(ground_point), 1.0, 2.0, 3.0);
-    expect_coordinates_near(transforms.to<View::Point>(ground_point), 50.0 / 3.0, 100.0 / 3.0);
+    EXPECT_THAT(transforms.to<Camera::Point>(ground_point), coordinates_near(Camera::Point{1.0, 2.0, 3.0}, 1e-9));
+    EXPECT_THAT(transforms.to<View::Point>(ground_point), coordinates_near(View::Point{50.0 / 3.0, 100.0 / 3.0}, 1e-9));
 }
 
 }  // namespace
