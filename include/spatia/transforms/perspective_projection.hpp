@@ -45,6 +45,7 @@ class PerspectiveProjection {
         const Vector<From>& unit = to_vector(direction);
         return project(unit.dx(), unit.dy(), unit.dz());
     }
+    // TODO: Line->Line
 
     constexpr Scalar scale_x() const noexcept { return scale_x_; }
     constexpr Scalar scale_y() const noexcept { return scale_y_; }
