@@ -47,8 +47,9 @@ through the transformed origin instead needs `Tag<Line<To>>`.
   with `Mid`, and the translation shares axes with `To`.
 - When a type has factory functions, they are named `from_...`
   (`Angle::from_radians`, `Dir::from_vector`).
-- Free conversion functions are named `to_...` (`to_rotation`, `to_euler_zyx`,
-  `to_vector`).
+- Free representation and widening conversions are named `to_...`
+  (`to_rotation`, `to_euler_zyx`, `to_vector`). Checked narrowing conversions
+  use `as_...` (`as_rigid`, `as_rotation`, `as_translation`).
 - Whenever possible a conversion is a free function, so the source type does
   not have to know every representation it can convert to. When a member
   implementation is more efficient, the same function may additionally be
@@ -127,7 +128,7 @@ Therefore `q_left * q_right` applies `q_right` first. Both `q` and `-q` represen
 `Rotation<From, To>` assumes that the two coordinate systems share an origin. It provides ordinary `rotation(object)` calls for `Point`, `Vector`, `Dir`, and `Line`, with an optional destination tag. Use `Rigid` or `Affine` when the transformation also includes an offset between origins.
 
 `Rigid::rotation()` returns the rotation matrix. Converting the whole rigid
-transform to a `Rotation<From, To>` requires `to_rotation(rigid)`, which checks
+transform to a `Rotation<From, To>` requires `as_rotation(rigid)`, which checks
 that its translation is zero within the supplied tolerance.
 
 ### Transform hierarchy
@@ -136,7 +137,7 @@ that its translation is zero within the supplied tolerance.
 
 Multiplying two transforms yields the narrowest kind that can represent the result, so `Rotation * Rotation` is a `Rotation` while `Rotation * Affine` is an `Affine`. `Projective` is the closure of the family: it stores a homogeneous matrix with one extra row and column, so it also covers `PerspectiveProjection`, which is projective but not affine. Any product involving a projective operand is projective.
 
-Going the other way is a **narrowing conversion**, and it can fail: `to_rigid(affine, tolerance)`, `to_rotation(rigid, tolerance)`, and `to_translation(rigid, tolerance)` check that the argument already satisfies the narrower invariant within `tolerance` (an absolute error on matrix entries and coordinates, `default_narrowing_tolerance` by default) and throw `std::invalid_argument` otherwise. The widening direction — `to_affine`, `to_rigid` from a rotation or translation, `to_projective` — always succeeds and takes no tolerance.
+Going the other way is a **narrowing conversion**, and it can fail: `as_rigid(affine, tolerance)`, `as_rotation(rigid, tolerance)`, and `as_translation(rigid, tolerance)` check that the argument already satisfies the narrower invariant within `tolerance` (an absolute error on matrix entries and coordinates, `default_narrowing_tolerance` by default) and throw `std::invalid_argument` otherwise. The widening direction — `to_affine`, `to_rigid` from a rotation or translation, `to_projective` — always succeeds and takes no tolerance.
 
 ### Projection direction
 

@@ -97,34 +97,36 @@ TEST(NarrowingConversionTest, AcceptsTransformsThatSatisfyTheNarrowerInvariant) 
     const auto pose = sample_pose();
     const auto affine = to_affine(pose);
 
-    const auto narrowed = to_rigid(affine);
+    const auto narrowed = as_rigid(affine);
     EXPECT_THAT(narrowed.from_origin_in_to(), coordinates_near(Point<OtherSpace>{1.0, 2.0, 3.0}, tolerance));
 
     const Translation<Space, OtherSpace> shift{Vector<OtherSpace>{5.0, 6.0, 7.0}};
-    const auto only_translation = to_translation(to_rigid(shift));
+    const auto only_translation = as_translation(to_rigid(shift));
     EXPECT_THAT(only_translation.translation(), coordinates_near(shift.translation(), tolerance));
+    EXPECT_THAT(as_translation(to_affine(shift)).translation(), coordinates_near(shift.translation(), tolerance));
 
     const Rotation<Space, OtherSpace> rotation{rotation_z(degrees(90.0))};
-    const auto only_rotation = to_rotation(to_rigid(rotation));
+    const auto only_rotation = as_rotation(to_rigid(rotation));
     EXPECT_THAT(only_rotation.to_matrix(), matrix_near(rotation.to_matrix(), tolerance));
+    EXPECT_THAT(as_rotation(to_affine(rotation)).to_matrix(), matrix_near(rotation.to_matrix(), tolerance));
 }
 
 TEST(NarrowingConversionTest, RejectsTransformsThatViolateTheNarrowerInvariant) {
     const Affine<Space, OtherSpace> scaling{SquareMatrix<3>{2.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0},
                                             Vector<OtherSpace>{}};
-    EXPECT_THROW(static_cast<void>(to_rigid(scaling)), std::invalid_argument);
-    EXPECT_THROW(static_cast<void>(to_rotation(scaling)), std::invalid_argument);
+    EXPECT_THROW(static_cast<void>(as_rigid(scaling)), std::invalid_argument);
+    EXPECT_THROW(static_cast<void>(as_rotation(scaling)), std::invalid_argument);
 
     const auto pose = sample_pose();
     // The pose both rotates and translates, so neither narrowing applies.
-    EXPECT_THROW(static_cast<void>(to_rotation(pose)), std::invalid_argument);
-    EXPECT_THROW(static_cast<void>(to_translation(pose)), std::invalid_argument);
+    EXPECT_THROW(static_cast<void>(as_rotation(pose)), std::invalid_argument);
+    EXPECT_THROW(static_cast<void>(as_translation(pose)), std::invalid_argument);
 
     // A generous tolerance accepts a slightly non-orthonormal linear part.
     const Affine<Space, OtherSpace> almost_rigid{SquareMatrix<3>{1.0 + 1e-7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0},
                                                  Vector<OtherSpace>{}};
-    EXPECT_THROW(static_cast<void>(to_rigid(almost_rigid)), std::invalid_argument);
-    EXPECT_NO_THROW(static_cast<void>(to_rigid(almost_rigid, 1e-5)));
+    EXPECT_THROW(static_cast<void>(as_rigid(almost_rigid)), std::invalid_argument);
+    EXPECT_NO_THROW(static_cast<void>(as_rigid(almost_rigid, 1e-5)));
 }
 
 }  // namespace

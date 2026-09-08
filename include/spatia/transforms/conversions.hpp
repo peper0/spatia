@@ -113,19 +113,19 @@ Projective<FromSpace, ToPlane> to_projective(const PerspectiveProjection<FromSpa
 // throws `std::invalid_argument`.
 
 template <class From, class To>
-Rigid<From, To> to_rigid(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
+Rigid<From, To> as_rigid(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
 
 template <class From, class To>
-Rotation<From, To> to_rotation(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);  // AI: te Narrowing conversions powinny byc as_...
+Rotation<From, To> as_rotation(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
 
 template <class From, class To>
-Rotation<From, To> to_rotation(const Rigid<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
+Rotation<From, To> as_rotation(const Rigid<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
 
 template <class From, class To>
-Translation<From, To> to_translation(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
+Translation<From, To> as_translation(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
 
 template <class From, class To>
-Translation<From, To> to_translation(const Rigid<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
+Translation<From, To> as_translation(const Rigid<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
 
 // Implementation ======================================================================================================
 
@@ -324,7 +324,7 @@ bool is_near_zero(const Vec<Dimension>& coordinates, Scalar tolerance) {
 }  // namespace detail
 
 template <class From, class To>
-Rigid<From, To> to_rigid(const Affine<From, To>& transform, Scalar tolerance) {
+Rigid<From, To> as_rigid(const Affine<From, To>& transform, Scalar tolerance) {
     if (!detail::is_orthonormal(transform.linear(), tolerance)) {
         throw std::invalid_argument("Affine transform is not rigid: its linear part is not a rotation");
     }
@@ -332,15 +332,15 @@ Rigid<From, To> to_rigid(const Affine<From, To>& transform, Scalar tolerance) {
 }
 
 template <class From, class To>
-Rotation<From, To> to_rotation(const Affine<From, To>& transform, Scalar tolerance) {
+Rotation<From, To> as_rotation(const Affine<From, To>& transform, Scalar tolerance) {
     if (!detail::is_near_zero(transform.translation().to_vec(), tolerance)) {
         throw std::invalid_argument("Affine transform is not a rotation: it translates the origin");
     }
-    return to_rotation(to_rigid(transform, tolerance), tolerance);
+    return as_rotation(as_rigid(transform, tolerance), tolerance);
 }
 
 template <class From, class To>
-Rotation<From, To> to_rotation(const Rigid<From, To>& transform, Scalar tolerance) {
+Rotation<From, To> as_rotation(const Rigid<From, To>& transform, Scalar tolerance) {
     if (!detail::is_near_zero(transform.from_origin_in_to().to_vec(), tolerance)) {
         throw std::invalid_argument("Rigid transform is not a rotation: it translates the origin");
     }
@@ -348,12 +348,12 @@ Rotation<From, To> to_rotation(const Rigid<From, To>& transform, Scalar toleranc
 }
 
 template <class From, class To>
-Translation<From, To> to_translation(const Affine<From, To>& transform, Scalar tolerance) {
-    return to_translation(to_rigid(transform, tolerance), tolerance);
+Translation<From, To> as_translation(const Affine<From, To>& transform, Scalar tolerance) {
+    return as_translation(as_rigid(transform, tolerance), tolerance);
 }
 
 template <class From, class To>
-Translation<From, To> to_translation(const Rigid<From, To>& transform, Scalar tolerance) {
+Translation<From, To> as_translation(const Rigid<From, To>& transform, Scalar tolerance) {
     const auto difference = transform.rotation();
     const auto identity = identity_matrix<dimension_v<From>>();
     for (std::size_t row = 0; row < dimension_v<From>; ++row) {
