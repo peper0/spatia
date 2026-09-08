@@ -48,6 +48,29 @@ template <class From, class To>
     requires(dimension_v<From> == 3 && dimension_v<To> == 3)
 Matrix<3, 3> to_matrix(const EulerZYX<From, To>& angles);
 
+// Bidirectional conversions: expose the forward and reverse mappings in one
+// object, preserving the transform kind.
+
+template <class From, class To>
+constexpr BiRotation<From, To> to_bidirectional(const Rotation<From, To>& transform);
+
+template <class From, class To>
+constexpr BiTranslation<From, To> to_bidirectional(const Translation<From, To>& transform);
+
+template <class From, class To>
+constexpr BiRigid<From, To> to_bidirectional(const Rigid<From, To>& transform);
+
+/// Requires an invertible linear part; construction computes its inverse.
+template <class From, class To>
+BiAffine<From, To> to_bidirectional(const Affine<From, To>& transform);
+
+/// The reverse perspective mapping recovers a direction in space.
+template <class FromSpace, class ToPlane>
+BiPerspectiveProjection<FromSpace, ToPlane> to_bidirectional(const PerspectiveProjection<FromSpace, ToPlane>& transform);
+
+template <class FromPlane, class ToSpace>
+BiPerspectiveProjection<ToSpace, FromPlane> to_bidirectional(const PerspectiveUnprojection<FromPlane, ToSpace>& transform);
+
 /// The default tolerance of the narrowing conversions below, expressed as an
 /// absolute error on matrix entries and translation coordinates.
 inline constexpr Scalar default_narrowing_tolerance = Scalar{1e-9};
@@ -165,6 +188,36 @@ template <class From, class To>
     requires(dimension_v<From> == 3 && dimension_v<To> == 3)
 Matrix<3, 3> to_matrix(const EulerZYX<From, To>& angles) {
     return to_rotation(angles).to_matrix();
+}
+
+template <class From, class To>
+constexpr BiRotation<From, To> to_bidirectional(const Rotation<From, To>& transform) {
+    return {transform};
+}
+
+template <class From, class To>
+constexpr BiTranslation<From, To> to_bidirectional(const Translation<From, To>& transform) {
+    return {transform};
+}
+
+template <class From, class To>
+constexpr BiRigid<From, To> to_bidirectional(const Rigid<From, To>& transform) {
+    return {transform};
+}
+
+template <class From, class To>
+BiAffine<From, To> to_bidirectional(const Affine<From, To>& transform) {
+    return {transform};
+}
+
+template <class FromSpace, class ToPlane>
+BiPerspectiveProjection<FromSpace, ToPlane> to_bidirectional(const PerspectiveProjection<FromSpace, ToPlane>& transform) {
+    return {transform.scale_x(), transform.scale_y(), transform.center_x(), transform.center_y()};
+}
+
+template <class FromPlane, class ToSpace>
+BiPerspectiveProjection<ToSpace, FromPlane> to_bidirectional(const PerspectiveUnprojection<FromPlane, ToSpace>& transform) {
+    return {transform.scale_x(), transform.scale_y(), transform.center_x(), transform.center_y()};
 }
 
 template <class From, class To>
