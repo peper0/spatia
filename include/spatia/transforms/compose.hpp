@@ -165,12 +165,12 @@ constexpr Rigid<A, C> operator*(const Rotation<B, C>& bc, const Rigid<A, B>& ab)
 
 template <class A, class B, class C>
 constexpr Affine<A, C> operator*(const Affine<B, C>& bc, const Affine<A, B>& ab) {
-    return {bc.linear() * ab.linear(), Vector<C>::from_vec(bc.linear() * ab.translation().to_vec()) + bc.translation()};
+    return {bc.linear() * ab.linear(), Vector<C>{bc.linear() * ab.translation().to_vec()} + bc.translation()};
 }
 
 template <class A, class B, class C>
 constexpr Translation<A, C> operator*(const Translation<B, C>& bc, const Translation<A, B>& ab) {
-    return Translation<A, C>{Vector<C>::from_vec(ab.translation().to_vec()) + bc.translation()};
+    return Translation<A, C>{Vector<C>{ab.translation().to_vec()} + bc.translation()};
 }
 
 // A translation leaves the axes alone, so in the mixed products below the
@@ -185,7 +185,7 @@ constexpr Rigid<A, C> operator*(const Rigid<B, C>& bc, const Translation<A, B>& 
 template <class A, class B, class C>
 constexpr Rigid<A, C> operator*(const Translation<B, C>& bc, const Rigid<A, B>& ab) {
     return {Rotation<A, C>{ab.rotation().to_matrix()},
-            Translation<A, C>{Vector<C>::from_vec(ab.translation().to_vec()) + bc.translation()}};
+            Translation<A, C>{Vector<C>{ab.translation().to_vec()} + bc.translation()}};
 }
 
 template <class A, class B, class C>

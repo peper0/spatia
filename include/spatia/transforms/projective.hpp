@@ -89,7 +89,7 @@ Point<To> Projective<From, To>::operator()(const Point<From>& point, Tag<Point<T
     for (std::size_t i = 0; i < to_dimension; ++i) {
         result[i] = projected[i] / weight;
     }
-    return Point<To>::from_vec(result);
+    return Point<To>{result};
 }
 
 template <class From, class To>

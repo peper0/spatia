@@ -38,7 +38,7 @@ class Rotation {
     // The destination tag defaults, so each conversion is a single overload
     // that both plain calls and the transform graph can use.
     constexpr Vector<To> operator()(const Vector<From>& vector, Tag<Vector<To>> = {}) const {
-        return Vector<To>::from_vec(matrix_ * vector.to_vec());
+        return Vector<To>{matrix_ * vector.to_vec()};
     }
     Dir<To> operator()(const Dir<From>& direction, Tag<Dir<To>> = {}) const {
         return Dir<To>::from_vector((*this)(to_vector(direction)));
@@ -46,7 +46,7 @@ class Rotation {
     Line<To> operator()(const Line<From>& line, Tag<Line<To>> = {}) const;
 
     constexpr Point<To> rotate_about_shared_origin(const Point<From>& point) const {
-        return Point<To>::from_vec(matrix_ * point.to_vec());
+        return Point<To>{matrix_ * point.to_vec()};
     }
 
     /// Deliberately without a default tag: rotating a point assumes that the

@@ -67,6 +67,8 @@ static_assert(std::same_as<Scalar, double>);
 static_assert(dimension_v<Ground> == 3);
 static_assert(dimension_v<Image> == 2);
 static_assert(std::same_as<decltype(Point<Ground>{} - Point<Ground>{}), Vector<Ground>>);
+static_assert(std::constructible_from<Vector<Ground>, Vec<3>>);
+static_assert(!std::convertible_to<Vec<3>, Vector<Ground>>);
 static_assert(!Addable<Vector<Ground>, Vector<Body>>);
 static_assert(!std::invocable<Rotation<Body, Ground>, Vector<Camera>>);
 static_assert(std::same_as<decltype(std::declval<Rotation<Body, Ground>>() * std::declval<Rotation<Camera, Body>>()),
@@ -79,8 +81,8 @@ TEST(SpecAlgebraTest, SeparatesRawCoordinatesFromGeometry) {
 
     EXPECT_EQ(xy, (Vec<2>{1.0, 2.0}));
 
-    const auto point = Point<Ground>::from_vec(coordinates);
-    const auto vector = Vector<Ground>::from_vec(coordinates);
+    const auto point = Point<Ground>{coordinates};
+    const auto vector = Vector<Ground>{coordinates};
     EXPECT_EQ(point.to_vec(), coordinates);
     EXPECT_EQ(vector.to_vec(), coordinates);
 }

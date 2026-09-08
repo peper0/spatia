@@ -30,10 +30,10 @@ class Affine {
     constexpr const Vector<To>& translation() const noexcept { return translation_; }
 
     constexpr Point<To> operator()(const Point<From>& point, Tag<Point<To>> = {}) const {
-        return Point<To>::from_vec(linear_ * point.to_vec()) + translation_;
+        return Point<To>{linear_ * point.to_vec()} + translation_;
     }
     constexpr Vector<To> operator()(const Vector<From>& vector, Tag<Vector<To>> = {}) const {
-        return Vector<To>::from_vec(linear_ * vector.to_vec());
+        return Vector<To>{linear_ * vector.to_vec()};
     }
     Dir<To> operator()(const Dir<From>& direction, Tag<Dir<To>> = {}) const {
         return Dir<To>::from_vector((*this)(to_vector(direction)));
@@ -85,7 +85,7 @@ Line<To> Affine<From, To>::operator()(const Line<From>& line, Tag<Line<To>>) con
 template <class From, class To>
 Affine<To, From> Affine<From, To>::inverse() const {
     const auto inverse_linear = spatia::inverse(linear_);
-    return {inverse_linear, Vector<From>::from_vec(inverse_linear * (-translation_).to_vec())};
+    return {inverse_linear, Vector<From>{inverse_linear * (-translation_).to_vec()}};
 }
 
 }  // namespace spatia

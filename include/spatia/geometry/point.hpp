@@ -24,11 +24,7 @@ class Point {
         requires(sizeof...(Values) == dimension_v<System> && (std::convertible_to<Values, Scalar> && ...))
     constexpr explicit Point(Values&&... coordinates) : coordinates_(std::forward<Values>(coordinates)...) {}
 
-    static constexpr Point from_vec(const Vec<dimension>& coordinates) {  // AI to jako explicit konstruktor
-        Point result;
-        result.coordinates_ = coordinates;
-        return result;
-    }
+    constexpr explicit Point(const Vec<dimension>& coordinates) : coordinates_(coordinates) {}
     constexpr Vec<dimension> to_vec() const { return coordinates_; }
 
     constexpr Scalar& operator[](std::size_t index) noexcept { return coordinates_[index]; }
@@ -86,12 +82,12 @@ constexpr Point<System> operator-(const Point<System>& point, const Vector<Syste
 
 template <class System>
 constexpr Vector<System> operator-(const Point<System>& left, const Point<System>& right) {
-    return Vector<System>::from_vec(left.to_vec() - right.to_vec());
+    return Vector<System>{left.to_vec() - right.to_vec()};
 }
 
 template <class System>
 constexpr Point<System> operator+(const Point<System>& point, const Vector<System>& offset) {
-    return Point<System>::from_vec(point.to_vec() + offset.to_vec());
+    return Point<System>{point.to_vec() + offset.to_vec()};
 }
 
 template <class System>

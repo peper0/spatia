@@ -19,7 +19,7 @@ class Dir {
    public:
     static constexpr std::size_t dimension = dimension_v<System>;
 
-    static Dir from_vec(const Vec<dimension>& coordinates) { return dir_of(Vector<System>::from_vec(coordinates)); }
+    static Dir from_vec(const Vec<dimension>& coordinates) { return dir_of(Vector<System>{coordinates}); }
     static Dir from_vector(const Vector<System>& vector) { return dir_of(vector); }
 
     constexpr bool operator==(const Dir&) const = default;

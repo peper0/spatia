@@ -27,7 +27,7 @@ class Rigid {
         : rotation_(rotation), translation_(translation.translation()) {}
     /// Builds the transform from raw algebra, bypassing the typed parts.
     constexpr Rigid(Matrix<dimension, dimension> rotation, Vec<dimension> translation)
-        : rotation_(Rotation<From, To>{rotation}), translation_(Vector<To>::from_vec(translation)) {}
+        : rotation_(Rotation<From, To>{rotation}), translation_(Vector<To>{translation}) {}
 
     constexpr const Rotation<From, To>& rotation() const noexcept { return rotation_; }
     constexpr const Vector<To>& translation() const noexcept { return translation_; }

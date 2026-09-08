@@ -143,11 +143,12 @@ Affine<Image, Screen> image_to_screen{
 Point<Screen> pixel = image_to_screen(Point<Image>{10.0, 20.0});
 
 Vec<2> raw{3.0, 4.0};
-Vector<Image> offset = Vector<Image>::from_vec(raw);
+Point<Image> position{raw};
+Vector<Image> offset{raw};
 Vec<2> exported = offset.to_vec();
 ```
 
-The `from_vec` and `to_vec` calls make loss or attachment of coordinate-system semantics visible in code.
+The explicit `Point` and `Vector` constructors and `to_vec` calls make attachment or loss of coordinate-system semantics visible in code.
 
 A rotation in the plane is a two-dimensional `Rotation` parameterized by a
 single angle:

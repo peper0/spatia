@@ -23,11 +23,7 @@ class Vector {
         requires(sizeof...(Values) == dimension_v<System> && (std::convertible_to<Values, Scalar> && ...))
     constexpr explicit Vector(Values&&... coordinates) : coordinates_(std::forward<Values>(coordinates)...) {}
 
-    static constexpr Vector from_vec(const Vec<dimension>& coordinates) {
-        Vector result;
-        result.coordinates_ = coordinates;
-        return result;
-    }
+    constexpr explicit Vector(const Vec<dimension>& coordinates) : coordinates_(coordinates) {}
     constexpr Vec<dimension> to_vec() const { return coordinates_; }
 
     constexpr Scalar& operator[](std::size_t index) noexcept { return coordinates_[index]; }
@@ -96,22 +92,22 @@ Scalar norm(const Vector<System>& vector);
 
 template <class System>
 constexpr Vector<System> operator+(const Vector<System>& left, const Vector<System>& right) {
-    return Vector<System>::from_vec(left.to_vec() + right.to_vec());
+    return Vector<System>{left.to_vec() + right.to_vec()};
 }
 
 template <class System>
 constexpr Vector<System> operator-(const Vector<System>& left, const Vector<System>& right) {
-    return Vector<System>::from_vec(left.to_vec() - right.to_vec());
+    return Vector<System>{left.to_vec() - right.to_vec()};
 }
 
 template <class System>
 constexpr Vector<System> operator-(const Vector<System>& vector) {
-    return Vector<System>::from_vec(-vector.to_vec());
+    return Vector<System>{-vector.to_vec()};
 }
 
 template <class System>
 constexpr Vector<System> operator*(const Vector<System>& vector, Scalar scale) {
-    return Vector<System>::from_vec(vector.to_vec() * scale);
+    return Vector<System>{vector.to_vec() * scale};
 }
 
 template <class System>
@@ -121,7 +117,7 @@ constexpr Vector<System> operator*(Scalar scale, const Vector<System>& vector) {
 
 template <class System>
 constexpr Vector<System> operator/(const Vector<System>& vector, Scalar scale) {
-    return Vector<System>::from_vec(vector.to_vec() / scale);
+    return Vector<System>{vector.to_vec() / scale};
 }
 
 template <class System>

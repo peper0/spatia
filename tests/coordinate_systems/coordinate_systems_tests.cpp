@@ -89,7 +89,7 @@ static_assert(std::same_as<SquareMatrix<3>, Matrix<3, 3>>);
 TEST(CoordinateMathTest, SupportsRectangularMatricesSeparatelyFromSquareMatrices) {
     const Matrix<2, 3> select_xy{1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
 
-    expect_coordinates_near(Picture::Vector::from_vec(select_xy * Camera::Vector{4.0, 5.0, 6.0}.to_vec()), 4.0, 5.0);
+    expect_coordinates_near(Picture::Vector{select_xy * Camera::Vector{4.0, 5.0, 6.0}.to_vec()}, 4.0, 5.0);
 }
 
 TEST(CoordinatePrimitivesTest, KeepsPointVectorAndFrameSemanticsInTheTypeSystem) {

@@ -25,10 +25,10 @@ class Translation {
     constexpr const Vector<To>& translation() const noexcept { return translation_; }
 
     constexpr Point<To> operator()(const Point<From>& point, Tag<Point<To>> = {}) const {
-        return Point<To>::from_vec(point.to_vec()) + translation_;
+        return Point<To>{point.to_vec()} + translation_;
     }
     constexpr Vector<To> operator()(const Vector<From>& vector, Tag<Vector<To>> = {}) const {
-        return Vector<To>::from_vec(vector.to_vec());
+        return Vector<To>{vector.to_vec()};
     }
     Dir<To> operator()(const Dir<From>& direction, Tag<Dir<To>> = {}) const {
         return Dir<To>::from_vec(to_vector(direction).to_vec());
@@ -36,7 +36,7 @@ class Translation {
     Line<To> operator()(const Line<From>& line, Tag<Line<To>> = {}) const;
 
     constexpr Translation<To, From> inverse() const {
-        return Translation<To, From>{Vector<From>::from_vec(-translation_.to_vec())};
+        return Translation<To, From>{Vector<From>{-translation_.to_vec()}};
     }
 
    private:

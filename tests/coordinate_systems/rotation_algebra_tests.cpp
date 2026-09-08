@@ -148,8 +148,7 @@ static_assert(!SingleConversionTransform<Quaternion>);
 static_assert(!SingleConversionTransform<Vector<FrameA>>);
 static_assert(!SingleConversionTransform<Angle>);
 static_assert(!SingleConversionTransform<Rotation<FrameA, FrameB>>);
-static_assert(
-    SingleConversionTransform<decltype([](const Point<FrameA>& p) { return Point<FrameB>::from_vec(p.to_vec()); })>);
+static_assert(SingleConversionTransform<decltype([](const Point<FrameA>& p) { return Point<FrameB>{p.to_vec()}; })>);
 
 // Each conversion is one overload with a defaulted destination tag. Where a
 // source type has more than one possible destination, the extra ones keep
