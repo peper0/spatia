@@ -116,7 +116,7 @@ template <class From, class To>
 Rigid<From, To> to_rigid(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
 
 template <class From, class To>
-Rotation<From, To> to_rotation(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
+Rotation<From, To> to_rotation(const Affine<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);  // AI: te Narrowing conversions powinny byc as_...
 
 template <class From, class To>
 Rotation<From, To> to_rotation(const Rigid<From, To>& transform, Scalar tolerance = default_narrowing_tolerance);
